@@ -1,24 +1,24 @@
-﻿/**
- * @name JoinedAtDate
+/**
+ * @name CreationDate
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.2.6
- * @description Displays the Joined At Date of a Member in the UserPopout and UserModal
+ * @version 1.4.1
+ * @description Displays the Creation Date of an Account in the UserPopout and UserModal
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
  * @patreon https://www.patreon.com/MircoWittrien
  * @website https://mwittrien.github.io/
- * @source https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/JoinedAtDate/
- * @updateUrl https://mwittrien.github.io/BetterDiscordAddons/Plugins/JoinedAtDate/JoinedAtDate.plugin.js
+ * @source https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/CreationDate/
+ * @updateUrl https://mwittrien.github.io/BetterDiscordAddons/Plugins/CreationDate/CreationDate.plugin.js
  */
 
 module.exports = (_ => {
 	const config = {
 		"info": {
-			"name": "JoinedAtDate",
+			"name": "CreationDate",
 			"author": "DevilBro",
-			"version": "1.2.6",
-			"description": "Displays the Joined At Date of a Member in the UserPopout and UserModal"
+			"version": "1.4.1",
+			"description": "Displays the Creation Date of an Account in the UserPopout and UserModal"
 		},
 		"changeLog": {
 			"improved": {
@@ -64,14 +64,9 @@ module.exports = (_ => {
 			template.content.firstElementChild.querySelector("a").addEventListener("click", this.downloadLibrary);
 			return template.content.firstElementChild;
 		}
-	} : (([Plugin, BDFDB]) => {
-		var loadedUsers, requestedUsers;
-		
-		return class JoinedAtDate extends Plugin {
+	} : (([Plugin, BDFDB]) => {		
+		return class CreationDate extends Plugin {
 			onLoad () {
-				loadedUsers = {};
-				requestedUsers = {};
-
 				this.defaults = {
 					general: {
 						displayText:			{value: true, 			description: "Display '{{presuffix}}' in the Date"}
@@ -81,7 +76,7 @@ module.exports = (_ => {
 						userProfile:			{value: true, 			description: "User Profile Modal"}
 					},
 					dates: {
-						joinedAtDate:			{value: {}, 			description: "Joined at Date"},
+						creationDate:			{value: {}, 			description: "Creation Date"},
 					}
 				};
 				
@@ -91,6 +86,7 @@ module.exports = (_ => {
 						AnalyticsContext: "render"
 					}
 				};
+				
 			}
 			
 			onStart () {
@@ -112,7 +108,7 @@ module.exports = (_ => {
 							type: "Switch",
 							plugin: this,
 							keys: ["general", key],
-							label: key == "displayText" ? this.defaults.general[key].description.replace("{{presuffix}}", this.labels.joined_at.replace("{{time}}", "").trim()) : this.defaults.general[key].description,
+							label: key == "displayText" ? this.defaults.general[key].description.replace("{{presuffix}}", this.labels.created_at.replace("{{time}}", "").trim()) : this.defaults.general[key].description,
 							value: this.settings.general[key]
 						})));
 						
@@ -137,8 +133,8 @@ module.exports = (_ => {
 						
 						settingsItems.push(Object.keys(this.defaults.dates).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.DateInput, Object.assign({}, this.settings.dates[key], {
 							label: this.defaults.dates[key].description,
-							prefix: _ => (this.settings.general.displayText && this.labels.joined_at.split("{{time}}")[0] || "").trim(),
-							suffix: _ => (this.settings.general.displayText && this.labels.joined_at.split("{{time}}")[1] || "").trim(),
+							prefix: _ => (this.settings.general.displayText && this.labels.created_at.split("{{time}}")[0] || "").trim(),
+							suffix: _ => (this.settings.general.displayText && this.labels.created_at.split("{{time}}")[1] || "").trim(),
 							onChange: valueObj => {
 								this.SettingsUpdated = true;
 								this.settings.dates[key] = valueObj;
@@ -159,9 +155,9 @@ module.exports = (_ => {
 			}
 
 			processUserPopout (e) {
-				if (e.instance.props.user && e.instance.props.guild && this.settings.places.userPopout) {
+				if (e.instance.props.user && this.settings.places.userPopout) {
 					let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "CustomStatus"});
-					if (index > -1) this.injectDate(e.instance, children, 2, e.instance.props.user, e.instance.props.guild.id);
+					if (index > -1) this.injectDate(children, 2, e.instance.props.user);
 				}
 			}
 
@@ -171,143 +167,129 @@ module.exports = (_ => {
 					e.returnvalue.props.children = (...args) => {
 						let renderedChildren = renderChildren(...args);
 						let [children, index] = BDFDB.ReactUtils.findParent(renderedChildren, {name: ["DiscordTag", "ColoredFluxTag"]});
-						if (index > -1) this.injectDate(e.instance, children, 1, children[index].props.user, BDFDB.ReactUtils.findValue(e.instance, "guildId", {up: true}));
+						if (index > -1) this.injectDate(children, 1, children[index].props.user);
 						return renderedChildren;
 					};
 				}
 			}
-
-			injectDate (instance, children, index, user, guildId) {
-				if (!guildId) guildId = BDFDB.LibraryModules.LastGuildStore.getGuildId();
-				if (!BDFDB.ArrayUtils.is(children) || !user || !guildId || user.discriminator == "0000" || !BDFDB.LibraryModules.MemberStore.getMember(guildId, user.id)) return;
-				if (!loadedUsers[guildId]) loadedUsers[guildId] = {};
-				if (!requestedUsers[guildId]) requestedUsers[guildId] = {};
-				if (!BDFDB.ArrayUtils.is(requestedUsers[guildId][user.id])) {
-					requestedUsers[guildId][user.id] = [instance];
-					BDFDB.LibraryModules.APIUtils.get(BDFDB.DiscordConstants.Endpoints.GUILD_MEMBER(guildId, user.id)).then(result => {
-						loadedUsers[guildId][user.id] = new Date(result.body.joined_at);
-						for (let queuedInstance of requestedUsers[guildId][user.id]) BDFDB.ReactUtils.forceUpdate(queuedInstance);
-					});
-				}
-				else if (!loadedUsers[guildId][user.id]) requestedUsers[guildId][user.id].push(instance);
-				else {
-					let timestamp = BDFDB.LibraryComponents.DateInput.format(this.settings.dates.joinedAtDate, loadedUsers[guildId][user.id]);
-					children.splice(index, 0, BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextScroller, {
-						className: BDFDB.disCNS._joinedatdatedate + BDFDB.disCNS.userinfodate + BDFDB.disCN.textrow,
-						children: this.settings.general.displayText ? this.labels.joined_at.replace("{{time}}", timestamp) : timestamp
-					}));
-				}
+			
+			injectDate (children, index, user) {
+				let timestamp = BDFDB.LibraryComponents.DateInput.format(this.settings.dates.creationDate, user.createdAt);
+				children.splice(index, 0, BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextScroller, {
+					className: BDFDB.disCNS._creationdatedate + BDFDB.disCNS.userinfodate + BDFDB.disCN.textrow,
+					children: this.settings.general.displayText ? this.labels.created_at.replace("{{time}}", timestamp) : timestamp
+				}));
 			}
 
 			setLabelsByLanguage () {
 				switch (BDFDB.LanguageUtils.getLanguage().id) {
 					case "bg":		// Bulgarian
 						return {
-							joined_at:							"Присъединил се на {{time}}"
+							created_at:							"Създадено на {{time}}"
 						};
 					case "da":		// Danish
 						return {
-							joined_at:							"Deltog den {{time}}"
+							created_at:							"Oprettet den {{time}}"
 						};
 					case "de":		// German
 						return {
-							joined_at:							"Beitritt am {{time}}"
+							created_at:							"Erstellt am {{time}}"
 						};
 					case "el":		// Greek
 						return {
-							joined_at:							"Έγινε μέλος στις {{time}}"
+							created_at:							"Δημιουργήθηκε στις {{time}}"
 						};
 					case "es":		// Spanish
 						return {
-							joined_at:							"Se unió el {{time}}"
+							created_at:							"Creado el {{time}}"
 						};
 					case "fi":		// Finnish
 						return {
-							joined_at:							"Liittyi {{time}}"
+							created_at:							"Luotu {{time}}"
 						};
 					case "fr":		// French
 						return {
-							joined_at:							"Rejoint le {{time}}"
+							created_at:							"Créé le {{time}}"
 						};
 					case "hr":		// Croatian
 						return {
-							joined_at:							"Pridružio se {{time}}"
+							created_at:							"Izrađeno {{time}}"
 						};
 					case "hu":		// Hungarian
 						return {
-							joined_at:							"Csatlakozott: {{time}}"
+							created_at:							"Létrehozva: {{time}}"
 						};
 					case "it":		// Italian
 						return {
-							joined_at:							"Iscritto il {{time}}"
+							created_at:							"Creato il {{time}}"
 						};
 					case "ja":		// Japanese
 						return {
-							joined_at:							"{{time}}に参加しました"
+							created_at:							"{{time}}に作成"
 						};
 					case "ko":		// Korean
 						return {
-							joined_at:							"{{time}}에 가입했습니다."
+							created_at:							"{{time}}에 생성됨"
 						};
 					case "lt":		// Lithuanian
 						return {
-							joined_at:							"Prisijungė {{time}}"
+							created_at:							"Sukurta {{time}}"
 						};
 					case "nl":		// Dutch
 						return {
-							joined_at:							"Aangesloten op {{time}}"
+							created_at:							"Gemaakt op {{time}}"
 						};
 					case "no":		// Norwegian
 						return {
-							joined_at:							"Ble med {{time}}"
+							created_at:							"Opprettet {{time}}"
 						};
 					case "pl":		// Polish
 						return {
-							joined_at:							"Dołączono {{time}}"
+							created_at:							"Utworzono {{time}}"
 						};
 					case "pt-BR":	// Portuguese (Brazil)
 						return {
-							joined_at:							"Entrou em {{time}}"
+							created_at:							"Criado em {{time}}"
 						};
 					case "ro":		// Romanian
 						return {
-							joined_at:							"S-a înscris pe {{time}}"
+							created_at:							"Creat la {{time}}"
 						};
 					case "ru":		// Russian
 						return {
-							joined_at:							"Присоединился {{time}}"
+							created_at:							"Создано {{time}}"
 						};
 					case "sv":		// Swedish
 						return {
-							joined_at:							"Gick med den {{time}}"
+							created_at:							"Skapad {{time}}"
 						};
 					case "th":		// Thai
 						return {
-							joined_at:							"เข้าร่วมเมื่อ {{time}}"
+							created_at:							"สร้างเมื่อ {{time}}"
 						};
 					case "tr":		// Turkish
 						return {
-							joined_at:							"{{time}} tarihinde katıldı"
+							created_at:							"{{time}} tarihinde oluşturuldu"
 						};
 					case "uk":		// Ukrainian
 						return {
-							joined_at:							"Приєднався {{time}}"
+							created_at:							"Створено {{time}}"
 						};
 					case "vi":		// Vietnamese
 						return {
-							joined_at:							"Đã tham gia vào {{time}}"
+							created_at:							"Được tạo vào {{time}}"
 						};
 					case "zh-CN":	// Chinese (China)
 						return {
-							joined_at:							"已于{{time}}加入"
+							created_at:							"创建于{{time}}"
 						};
 					case "zh-TW":	// Chinese (Taiwan)
 						return {
-							joined_at:							"已於{{time}}加入"
+							created_at:							"創建於{{time}}"
 						};
 					default:		// English
 						return {
-							joined_at:							"Joined on {{time}}"
+							created_at:							"Created on {{time}}"
 						};
 				}
 			}
