@@ -2,7 +2,7 @@
  * @name StaffTag
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.4.0
+ * @version 1.4.5
  * @description Adds a Crown/Tag to Server Owners (or Admins/Management)
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,12 +17,12 @@ module.exports = (_ => {
 		"info": {
 			"name": "StaffTag",
 			"author": "DevilBro",
-			"version": "1.4.0",
+			"version": "1.4.5",
 			"description": "Adds a Crown/Tag to Server Owners (or Admins/Management)"
 		},
 		"changeLog": {
-			"progress": {
-				"New Plugin Name": "Changed Plugin Name for more clarity"
+			"fixed": {
+				"Commands": "No longer use the crown of the bot instead of the user"
 			}
 		}
 	};
@@ -80,7 +80,7 @@ module.exports = (_ => {
 						MessageUsername: "default",
 						VoiceUser: "render",
 						NameTag: "default",
-						UserPopout: "render"
+						UserPopoutInfo: "default"
 					}
 				};
 				
@@ -238,14 +238,14 @@ module.exports = (_ => {
 			}
 
 			processMessageUsername (e) {
-				if (e.instance.props.message && this.settings.tagPlaces.chat) {
-					let userType = this.getUserType(e.instance.props.message.author, e.instance.props.message.channel_id);
-					if (userType) this.injectStaffTag(e.returnvalue.props.children, e.instance.props.message.author, userType, e.instance.props.compact ? 0 : 2, {
-						channelId: e.instance.props.message.channel_id,
-						tagClass: e.instance.props.compact ? BDFDB.disCN.messagebottagcompact : BDFDB.disCN.messagebottagcozy,
-						useRem: true
-					});
-				}
+				if (!e.instance.props.message || !this.settings.tagPlaces.chat) return;
+				const author = e.instance.props.userOverride || e.instance.props.message.author;
+				let userType = this.getUserType(author, e.instance.props.message.channel_id);
+				if (userType) this.injectStaffTag(e.returnvalue.props.children, author, userType, e.instance.props.compact ? 0 : 2, {
+					channelId: e.instance.props.message.channel_id,
+					tagClass: e.instance.props.compact ? BDFDB.disCN.messagebottagcompact : BDFDB.disCN.messagebottagcozy,
+					useRem: true
+				});
 			}
 
 			processVoiceUser (e) {
@@ -268,7 +268,7 @@ module.exports = (_ => {
 						switch (e.instance.props.className) {
 							case BDFDB.disCN.userpopoutheadertagnonickname:
 								inject = this.settings.tagPlaces.userPopout;
-								tagClass = BDFDB.disCN.bottagnametag;
+								tagClass = BDFDB.disCNS.userpopoutheaderbottag + BDFDB.disCN.bottagnametag;
 								break;
 							case BDFDB.disCN.userprofilenametag:
 								inject = this.settings.tagPlaces.userProfile;
@@ -283,16 +283,19 @@ module.exports = (_ => {
 					}
 				}
 			}
-
-			processUserPopout (e) {
+			
+			processUserPopoutInfo (e) {
 				if (e.instance.props.user && this.settings.tagPlaces.userPopout) {
 					let userType = this.getUserType(e.instance.props.user, e.instance.props.channel && e.instance.props.channel.id);
 					if (userType) {
-						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {props: [["className", BDFDB.disCN.userpopoutheadertagwithnickname]]});
-						if (index > -1) this.injectStaffTag(children, e.instance.props.user, userType, 2, {
-							tagClass: BDFDB.disCNS.userpopoutheaderbottagwithnickname + BDFDB.disCN.bottagnametag,
-							inverted: typeof e.instance.getMode == "function" && e.instance.getMode() !== "Normal"
-						});
+						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {props: [["className", BDFDB.disCN.userpopoutheadernickname]]});
+						if (index > -1) {
+							if (!BDFDB.ArrayUtils.is(children[index].props.children)) children[index].props.children = [children[index].props.children].flat(10);
+							this.injectStaffTag(children[index].props.children, e.instance.props.user, userType, 2, {
+								tagClass: BDFDB.disCNS.userpopoutheaderbottag + BDFDB.disCN.bottagnametag,
+								inverted: typeof e.instance.getMode == "function" && e.instance.getMode() !== "Normal"
+							});
+						}
 					}
 				}
 			}
