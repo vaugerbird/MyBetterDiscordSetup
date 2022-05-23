@@ -2,7 +2,7 @@
  * @name ReadAllNotificationsButton
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.6.8
+ * @version 1.7.1
  * @description Adds a Clear Button to the Server List and the Mentions Popout
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,7 +17,7 @@ module.exports = (_ => {
 		"info": {
 			"name": "ReadAllNotificationsButton",
 			"author": "DevilBro",
-			"version": "1.6.8",
+			"version": "1.7.1",
 			"description": "Adds a Clear Button to the Server List and the Mentions Popout"
 		}
 	};
@@ -62,12 +62,12 @@ module.exports = (_ => {
 	} : (([Plugin, BDFDB]) => {
 		var _this;
 		var blacklist, clearing;
-		var settings = {};
+		var mentionedMessages = [];
 		
 		const ReadAllButtonComponent = class ReadAllButton extends BdApi.React.Component {
 			clearClick() {
-				if (settings.includeGuilds) this.clearGuilds(settings.includeMuted ? this.getGuilds() : this.getUnread());
-				if (settings.includeDMs) BDFDB.DMUtils.markAsRead(this.getPingedDMs());
+				if (_this.settings.batch.guilds) this.clearGuilds(_this.settings.batch.muted ? this.getGuilds() : this.getUnread());
+				if (_this.settings.batch.dms) BDFDB.DMUtils.markAsRead(this.getPingedDMs());
 			}
 			clearGuilds(guildIds) {
 				BDFDB.GuildUtils.markAsRead(guildIds.filter(id => id && !blacklist.includes(id)));
@@ -96,7 +96,7 @@ module.exports = (_ => {
 							className: BDFDB.disCNS.guildiconchildwrapper + BDFDB.disCN._readallnotificationsbuttonbutton,
 							children: "read all",
 							onClick: _ => {
-								if (!settings.confirmClear) this.clearClick();
+								if (!_this.settings.general.confirmClear) this.clearClick();
 								else BDFDB.ModalUtils.confirm(_this, _this.labels.modal_confirmnotifications, _ => this.clearClick());
 							},
 							onContextMenu: event => {
@@ -141,18 +141,20 @@ module.exports = (_ => {
 				_this = this;
 				
 				this.defaults = {
-					settings: {
-						addClearButton:	{value: true, 	inner: false,	description: "Add a 'Clear Mentions' button to the recent mentions popout"},
-						confirmClear:	{value: false,	inner: false, 	description: "Ask for your confirmation before clearing reads"},
-						includeGuilds:	{value: true, 	inner: true,	description: "unread Servers"},
-						includeMuted:	{value: false, 	inner: true,	description: "muted unread Servers"},
-						includeDMs:		{value: false, 	inner: true,	description: "unread DMs"}
+					general: {
+						addClearButton:		{value: true, 	description: "Add a 'Clear Mentions' button to the recent mentions popout"},
+						confirmClear:		{value: false, 	description: "Ask for your confirmation before clearing reads"}
+					},
+					batch: {
+						guilds:				{value: true, 	description: "unread Servers"},
+						muted:				{value: false, 	description: "muted unread Servers"},
+						dms:				{value: false, 	description: "unread DMs"}
 					}
 				};
 				
 				this.patchedModules = {
 					after: {
-						Guilds: "render",
+						Guilds: "type",
 						RecentMentions: "default",
 						RecentsHeader: "default"
 					}
@@ -162,7 +164,10 @@ module.exports = (_ => {
 					${BDFDB.dotCN.messagespopouttabbar} {
 						flex: 1 0 auto;
 					}
-					${BDFDB.dotCN.messagespopouttabbar} ~ * {
+					${BDFDB.dotCN.messagespopoutcontrols} {
+						display: flex;
+					}
+					${BDFDB.dotCN.messagespopoutcontrols} > * {
 						margin-left: 10px;
 					}
 					${BDFDB.dotCN._readallnotificationsbuttonframe} {
@@ -203,22 +208,22 @@ module.exports = (_ => {
 				settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.CollapseContainer, {
 					title: "Settings",
 					collapseStates: collapseStates,
-					children: Object.keys(settings).filter(key => !this.defaults.settings[key].inner).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
+					children: Object.keys(this.defaults.general).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
 						type: "Switch",
 						plugin: this,
-						keys: ["settings", key],
-						label: this.defaults.settings[key].description,
-						value: settings[key]
+						keys: ["general", key],
+						label: this.defaults.general[key].description,
+						value: this.settings.general[key]
 					})).concat(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsPanelList, {
-						title: "When left clicking the 'read all' button mark following Elements as read:",
+						title: "When left clicking the 'read all' Button mark following Elements as read:",
 						first: false,
 						last: true,
-						children: Object.keys(settings).filter(key => this.defaults.settings[key].inner).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
+						children: Object.keys(this.defaults.batch).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsSaveItem, {
 							type: "Switch",
 							plugin: this,
-							keys: ["settings", key],
-							label: this.defaults.settings[key].description,
-							value: settings[key]
+							keys: ["batch", key],
+							label: this.defaults.batch[key].description,
+							value: this.settings.batch[key]
 						}))
 					}))
 				}));
@@ -266,48 +271,23 @@ module.exports = (_ => {
 			}
 		
 			forceUpdateAll () {
-				settings = BDFDB.DataUtils.get(this, "settings");
-				
 				BDFDB.PatchUtils.forceAllUpdates(this);
+				BDFDB.GuildUtils.rerenderAll();
 			}
-		
+			
 			processGuilds (e) {
-				if (typeof e.returnvalue.props.children == "function") {
-					let childrenRender = e.returnvalue.props.children;
-					e.returnvalue.props.children = (...args) => {
-						let children = childrenRender(...args);
-						this.checkTree(children);
-						return children;
-					};
-				}
-				else this.checkTree(e.returnvalue);
-			}
-			
-			checkTree (returnvalue) {
-				let tree = BDFDB.ReactUtils.findChild(returnvalue, {filter: n => n && n.props && typeof n.props.children == "function"});
-				if (tree) {
-					let childrenRender = tree.props.children;
-					tree.props.children = (...args) => {
-						let children = childrenRender(...args);
-						this.handleGuilds(children);
-						return children;
-					};
-				}
-				else this.handleGuilds(returnvalue);
-			}
-			
-			handleGuilds (returnvalue) {
-				let [children, index] = BDFDB.ReactUtils.findParent(returnvalue, {name: "ConnectedUnreadDMs"});
+				let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "UnreadDMs"});
 				if (index > -1) children.splice(index + 1, 0, BDFDB.ReactUtils.createElement(ReadAllButtonComponent, {}));
 			}
 
 			processRecentMentions (e) {
-				if (e.instance.props.header && e.instance.props.header.props) e.instance.props.header.props.messages = e.returnvalue.props.messages;
+				mentionedMessages = e.returnvalue.props.messages;
 			}
 
 			processRecentsHeader (e) {
-				if (settings.addClearButton && e.instance.props.tab == "Recent Mentions") e.returnvalue.props.children.push(BDFDB.ReactUtils.createElement("div", {
-					children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TooltipContainer, {
+				if (this.settings.general.addClearButton && mentionedMessages && mentionedMessages.length && e.instance.props.tab == BDFDB.LibraryModules.InboxUtils.InboxTab.MENTIONS) e.returnvalue.props.children = [
+					e.returnvalue.props.children,
+					BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TooltipContainer, {
 						text: `${BDFDB.LanguageUtils.LanguageStrings.CLOSE} (${BDFDB.LanguageUtils.LanguageStrings.FORM_LABEL_ALL})`,
 						children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Clickable, {
 							className: BDFDB.disCNS.messagespopoutbutton + BDFDB.disCNS.messagespopoutbuttonsecondary + BDFDB.disCN.messagespopoutbuttonsize32,
@@ -320,7 +300,7 @@ module.exports = (_ => {
 							onClick: _ => {
 								let clear = _ => {
 									if (clearing) return BDFDB.NotificationUtils.toast(`${this.labels.toast_alreadyclearing} - ${BDFDB.LanguageUtils.LibraryStrings.please_wait}`, {type: "danger"});
-									let messages = [].concat(e.instance.props.messages).filter(n => n);
+									let messages = [].concat(mentionedMessages).filter(n => n);
 									if (messages.length) {
 										clearing = true;
 										let toastInterval;
@@ -344,12 +324,12 @@ module.exports = (_ => {
 										}, i * 1000);
 									}
 								};
-								if (settings.confirmClear) BDFDB.ModalUtils.confirm(this, this.labels.modal_confirmmentions, clear);
+								if (this.settings.general.confirmClear) BDFDB.ModalUtils.confirm(this, this.labels.modal_confirmmentions, clear);
 								else clear();
 							}
 						})
 					})
-				}));
+				].flat(10);
 			}
 			
 			batchSetGuilds (settingsPanel, collapseStates, value) {

@@ -2,7 +2,7 @@
  * @name FriendNotifications
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.7.2
+ * @version 1.8.2
  * @description Shows a Notification when a Friend or a User, you choose to observe, changes their Status
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,13 +17,8 @@ module.exports = (_ => {
 		"info": {
 			"name": "FriendNotifications",
 			"author": "DevilBro",
-			"version": "1.7.2",
+			"version": "1.8.2",
 			"description": "Shows a Notification when a Friend or a User, you choose to observe, changes their Status"
-		},
-		"changeLog": {
-			"improved": {
-				"Added some extra Info": "New Info on how to control the Observer List better"
-			}
 		}
 	};
 
@@ -68,6 +63,7 @@ module.exports = (_ => {
 		var _this;
 		var userStatusStore, timeLog, lastTimes, checkInterval;
 		var friendCounter, timeLogList;
+		var defaultSettings = {};
 		var observedUsers = {};
 		var paginationOffset = {};
 		
@@ -106,6 +102,9 @@ module.exports = (_ => {
 				value: true,
 				name: "STATUS_OFFLINE",
 				sound: true
+			},
+			login: {
+				value: false
 			},
 			mobile: {
 				value: false
@@ -202,12 +201,13 @@ module.exports = (_ => {
 				timeLog = [];
 				lastTimes = {};
 				friendCounter = null;
+				
+				this.neverSyncData = true;
 
 				this.defaults = {
 					general: {
 						addOnlineCount:		{value: true, 	description: "Add an Online Friend Counter to the Server List (Click to open Time Log)"},
 						showDiscriminator:	{value: false, 	description: "Add the User Discriminator"},
-						disableForNew:		{value: false, 	description: "Disable Notifications for newly added Friends"},
 						muteOnDND:			{value: false, 	description: "Do not notify me when I am in DnD Status"},
 						openOnClick:		{value: false, 	description: "Open the DM when you click a Notification"}
 					},
@@ -219,6 +219,7 @@ module.exports = (_ => {
 						listening: 			{value: "$user started listening to '$song'"},
 						streaming: 			{value: "$user started streaming '$game'"},
 						offline: 			{value: "$user changed status to '$status'"},
+						login: 				{value: "$user just logged in '$status'"},
 						custom: 			{value: "$user changed status to '$custom'"}
 					},
 					notificationSounds: {},
@@ -233,7 +234,7 @@ module.exports = (_ => {
 			
 				this.patchedModules = {
 					after: {
-						Guilds: "render"
+						Guilds: "type"
 					}
 				};
 		
@@ -271,40 +272,25 @@ module.exports = (_ => {
 			}
 			
 			onStart () {
-				// REMOVE 24.04.2021
-				let oldData = BDFDB.DataUtils.load(this);
-				if (oldData.settings) {
-					this.settings.general = oldData.settings;
-					BDFDB.DataUtils.save(this.settings.general, this, "general");
-					BDFDB.DataUtils.remove(this, "settings");
-				}
-				if (oldData.notificationstrings) {
-					this.settings.notificationStrings = oldData.notificationstrings;
-					BDFDB.DataUtils.save(this.settings.notificationStrings, this, "notificationStrings");
-					BDFDB.DataUtils.remove(this, "notificationstrings");
-				}
-				if (oldData.notificationsounds) {
-					this.settings.notificationSounds = oldData.notificationsounds;
-					BDFDB.DataUtils.save(this.settings.notificationSounds, this, "notificationSounds");
-					BDFDB.DataUtils.remove(this, "notificationsounds");
-				}
-				if (!BDFDB.DataUtils.load(this, "observed", BDFDB.UserUtils.me.id)) {
-					let observed = {};
-					let friendsObserved = BDFDB.DataUtils.load(this, "friends");
-					let strangersObserved = BDFDB.DataUtils.load(this, "nonfriends");
-					if (!BDFDB.ObjectUtils.isEmpty(friendsObserved)) observed.friends = friendsObserved;
-					if (!BDFDB.ObjectUtils.isEmpty(strangersObserved)) observed.strangers = strangersObserved;
-					if (observed.friends || observed.strangers) BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
-				}
+				// REMOVE 09.04.2022
+				let observed = BDFDB.DataUtils.load(this, "observed");
+				if (observed) BDFDB.DataUtils.save(observed, this, "observed");
 				
 				this.startInterval();
 
-				BDFDB.PatchUtils.forceAllUpdates(this);
+				this.forceUpdateAll();
 			}
 			
 			onStop () {
 				BDFDB.TimeUtils.clear(checkInterval);
 				
+				this.forceUpdateAll();
+			}
+			
+			forceUpdateAll () {
+				defaultSettings = Object.assign(BDFDB.ObjectUtils.map(statuses, status => notificationTypes[status.value ? "TOAST" : "DISABLED"].value), {timelog: true}, BDFDB.DataUtils.load(this, "defaultSettings"));
+				
+				BDFDB.GuildUtils.rerenderAll();
 				BDFDB.PatchUtils.forceAllUpdates(this);
 			}
 
@@ -314,14 +300,19 @@ module.exports = (_ => {
 					let specificObserved = observed[type] || {};
 					if (config == "all") {
 						config = "disabled";
-						for (let id in specificObserved) specificObserved[id][config] = notificationTypes[notificationType].button == 0 ? false : true;
+						const value = notificationTypes[notificationType].button == 0 ? false : true;
+						for (let id in specificObserved) specificObserved[id][config] = value;
+					}
+					else if (config == "timelog") {
+						const value = notificationType == "TOAST" ? notificationTypes.TOAST.value : notificationTypes.DISABLED.value;
+						for (let id in specificObserved) specificObserved[id][config] = value;
 					}
 					else {
 						let disabled = BDFDB.ObjectUtils.toArray(specificObserved).every(d => !d.disabled && d[config] == notificationTypes[notificationType].value);
 						for (let id in specificObserved) specificObserved[id][config] = notificationTypes[disabled ? "DISABLED" : notificationType].value;
 					}
 					observed[type] = specificObserved
-					BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+					BDFDB.DataUtils.save(observed, this, "observed");
 					this.SettingsUpdated = true;
 					BDFDB.PluginUtils.refreshSettingsPanel(this, settingsPanel, collapseStates);
 				};
@@ -408,21 +399,26 @@ module.exports = (_ => {
 					items.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsList, {
 						className: BDFDB.disCN.margintop20,
 						title: "all",
-						settings: Object.keys(statuses),
+						settings: Object.keys(statuses).concat("timelog"),
 						data: users,
 						pagination: {
 							alphabetKey: "username",
 							amount: 50,
 							offset: paginationOffset[title] || 0,
-							onJump: offset => {paginationOffset[title] = offset;}
+							onJump: offset => paginationOffset[title] = offset
 						},
 						getCheckboxColor: value => {
 							let color = (BDFDB.ObjectUtils.toArray(notificationTypes).find(n => n.value == value) || {}).color;
 							return BDFDB.DiscordConstants.Colors[color] || color;
 						},
-						getCheckboxValue: (value, event) => {
-							let eventValue = (BDFDB.ObjectUtils.toArray(notificationTypes).find(n => n.button == event.button) || {}).value;
-							return eventValue == value ? 0 : eventValue;
+						getCheckboxValue: (value, event, instance) => {
+							if (instance && instance.props.settingId == "timelog") {
+								return value == notificationTypes.DISABLED.value ? notificationTypes.TOAST.value : notificationTypes.DISABLED.value;
+							}
+							else {
+								let eventValue = (BDFDB.ObjectUtils.toArray(notificationTypes).find(n => n.button == event.button) || {}).value;
+								return eventValue == value ? 0 : eventValue;
+							}
 						},
 						renderLabel: cardData => [
 							BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.AvatarComponents.default, {
@@ -432,16 +428,16 @@ module.exports = (_ => {
 								size: BDFDB.LibraryComponents.AvatarComponents.Sizes.SIZE_40,
 								onClick: _ => {
 									let observed = this.getObservedData();
-									let data = observed[type][cardData.id] || this.createDefaultConfig();
+									let data = observed[type][cardData.id] || Object.assign({}, defaultSettings);
 									data.disabled = !data.disabled;
 									observed[type][data.id] = data;
-									BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+									BDFDB.DataUtils.save(observed, this, "observed");
 									this.SettingsUpdated = true;
 									BDFDB.PluginUtils.refreshSettingsPanel(this, settingsPanel, collapseStates);
 								},
 								onContextMenu: _ => {
 									let observed = this.getObservedData();
-									let data = observed[type][cardData.id] || this.createDefaultConfig();
+									let data = observed[type][cardData.id] || Object.assign({}, defaultSettings);
 									let batchType;
 									for (let config in statuses) {
 										if (data[config] == notificationTypes.TOAST.value) batchType = notificationTypes.DESKTOP.value;
@@ -450,7 +446,7 @@ module.exports = (_ => {
 									}
 									for (let config in statuses) if (data[config] != notificationTypes.DISABLED.value) data[config] = batchType;
 									observed[type][data.id] = data;
-									BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+									BDFDB.DataUtils.save(observed, this, "observed");
 									this.SettingsUpdated = true;
 									BDFDB.PluginUtils.refreshSettingsPanel(this, settingsPanel, collapseStates);
 								}
@@ -467,17 +463,17 @@ module.exports = (_ => {
 						},
 						onCheckboxChange: (value, instance) => {
 							let observed = this.getObservedData();
-							let data = observed[type][instance.props.cardId] || this.createDefaultConfig();
+							let data = observed[type][instance.props.cardId] || Object.assign({}, defaultSettings);
 							data[instance.props.settingId] = value;
 							observed[type][instance.props.cardId] = data;
-							BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+							BDFDB.DataUtils.save(observed, this, "observed");
 							this.SettingsUpdated = true;
 						},
 						noRemove: type == "friends",
 						onRemove: (e, instance) => {
 							let observed = this.getObservedData();
 							delete observed[type][instance.props.cardId];
-							BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+							BDFDB.DataUtils.save(observed, this, "observed");
 							BDFDB.PluginUtils.refreshSettingsPanel(this, settingsPanel, collapseStates);
 							this.SettingsUpdated = true;
 						}
@@ -535,6 +531,20 @@ module.exports = (_ => {
 							]
 						}));
 						
+						settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.CollapseContainer, {
+							title: "Default Settings for new Users",
+							collapseStates: collapseStates,
+							children: ["disabled"].concat(Object.keys(defaultSettings)).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
+								type: "Switch",
+								label: BDFDB.LibraryModules.StringUtils.upperCaseFirstChar(key),
+								value: !!defaultSettings[key],
+								onChange: value => {
+									defaultSettings[key] = !!statuses[key] ? notificationTypes[value ? "TOAST" : "DISABLED"].value : value;
+									BDFDB.DataUtils.save(defaultSettings, this, "defaultSettings");
+								}
+							}))
+						}));
+						
 						let friendCards = Object.keys(observed.friends).map(BDFDB.LibraryModules.UserStore.getUser).filter(n => n);
 						let strangerCards = Object.keys(observed.strangers).map(BDFDB.LibraryModules.UserStore.getUser).filter(n => n);
 						
@@ -553,7 +563,6 @@ module.exports = (_ => {
 								children: [
 									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex.Child, {
 										children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextInput, {
-											className: `input-newstranger`,
 											placeholder: "user (id or name#discriminator)",
 											value: "",
 											onChange: value => strangerId = value
@@ -568,8 +577,8 @@ module.exports = (_ => {
 											else {
 												let user = /.+#[0-9]{4}/.test(userId) ? BDFDB.LibraryModules.UserStore.findByTag(userId.split("#").slice(0, -1).join("#"), userId.split("#").pop()) : BDFDB.LibraryModules.UserStore.getUser(userId);
 												if (user) {
-													observed.strangers[user.id || userId] = this.createDefaultConfig();
-													BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+													observed.strangers[user.id || userId] = Object.assign({}, defaultSettings);
+													BDFDB.DataUtils.save(observed, this, "observed");
 													BDFDB.PluginUtils.refreshSettingsPanel(this, settingsPanel, collapseStates);
 													this.SettingsUpdated = true;
 												}
@@ -700,7 +709,7 @@ module.exports = (_ => {
 							children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
 								type: "Button",
 								label: "Overview of LogIns/-Outs of current Session",
-								onClick: _ => {this.showTimeLog()},
+								onClick: _ => this.showTimeLog(),
 								children: "Timelog"
 							})
 						}));
@@ -715,52 +724,26 @@ module.exports = (_ => {
 					delete this.SettingsUpdated;
 					
 					this.startInterval();
-					BDFDB.PatchUtils.forceAllUpdates(this);
+					this.forceUpdateAll();
 				}
 			}
 			
 			processGuilds (e) {
-				if (this.settings.general.addOnlineCount) {
-					if (typeof e.returnvalue.props.children == "function") {
-						let childrenRender = e.returnvalue.props.children;
-						e.returnvalue.props.children = (...args) => {
-							let children = childrenRender(...args);
-							this.checkTree(children);
-							return children;
-						};
-					}
-					else this.checkTree(e.returnvalue);
-				}
-			}
-			
-			checkTree (returnvalue) {
-				let tree = BDFDB.ReactUtils.findChild(returnvalue, {filter: n => n && n.props && typeof n.props.children == "function"});
-				if (tree) {
-					let childrenRender = tree.props.children;
-					tree.props.children = (...args) => {
-						let children = childrenRender(...args);
-						this.injectCounter(children);
-						return children;
-					};
-				}
-				else this.injectCounter(returnvalue);
-			}
-			
-			injectCounter (returnvalue) {
-				let [children, index] = BDFDB.ReactUtils.findParent(returnvalue, {name: "ConnectedUnreadDMs"});
+				if (!this.settings.general.addOnlineCount) return;
+				let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "UnreadDMs"});
 				if (index > -1) children.splice(index, 0, BDFDB.ReactUtils.createElement(FriendOnlineCounterComponent, {
-					amount: BDFDB.LibraryModules.StatusMetaUtils.getOnlineFriendCount()
+					amount: this.getOnlineCount()
 				}));
 			}
 			
 			getObservedData () {
-				let observed = Object.assign({friends: {}, strangers: {}}, BDFDB.DataUtils.load(this, "observed", BDFDB.UserUtils.me.id));
+				let observed = Object.assign({friends: {}, strangers: {}}, BDFDB.DataUtils.load(this, "observed"));
 				let friendIds = BDFDB.LibraryModules.RelationshipStore.getFriendIDs();
 				
 				for (let id of friendIds) {
 					let user = BDFDB.LibraryModules.UserStore.getUser(id);
 					if (user) {
-						observed.friends[id] = Object.assign({}, observed.friends[id] || observed.strangers[id] || this.createDefaultConfig());
+						observed.friends[id] = Object.assign({}, defaultSettings, observed.friends[id] || observed.strangers[id]);
 						delete observed.strangers[id];
 					}
 				}
@@ -771,15 +754,9 @@ module.exports = (_ => {
 				
 				delete observed.friends[BDFDB.UserUtils.me.id];
 				delete observed.strangers[BDFDB.UserUtils.me.id];
-				BDFDB.DataUtils.save(observed, this, "observed", BDFDB.UserUtils.me.id);
+				BDFDB.DataUtils.save(observed, this, "observed");
 				
 				return observed;
-			}
-
-			createDefaultConfig () {
-				return Object.assign({
-					disabled: this.settings.general.disableForNew
-				}, BDFDB.ObjectUtils.map(statuses, init => notificationTypes[init ? "TOAST" : "DISABLED"].value));
 			}
 
 			getStatusWithMobileAndActivity (id, config, clientStatuses) {
@@ -814,6 +791,10 @@ module.exports = (_ => {
 			activityIsSame (id, status) {
 				return BDFDB.equals(BDFDB.ObjectUtils.extract(userStatusStore[id].activity, "name", "details", "state", "emoji"), status && BDFDB.ObjectUtils.extract(status.activity, "name", "details", "state", "emoji"));
 			}
+			
+			getOnlineCount () {
+				return Object.entries(BDFDB.LibraryModules.RelationshipStore.getRelationships()).filter(n => n[1] == BDFDB.DiscordConstants.RelationshipTypes.FRIEND && BDFDB.LibraryModules.StatusMetaUtils.getStatus(n[0]) != BDFDB.DiscordConstants.StatusTypes.OFFLINE).length;
+			}
 
 			startInterval () {
 				BDFDB.TimeUtils.clear(checkInterval);
@@ -826,7 +807,7 @@ module.exports = (_ => {
 				for (let id in observedUsers) userStatusStore[id] = this.getStatusWithMobileAndActivity(id, observedUsers[id], clientStatuses);
 				
 				checkInterval = BDFDB.TimeUtils.interval(_ => {
-					let amount = BDFDB.LibraryModules.StatusMetaUtils.getOnlineFriendCount();
+					let amount = this.getOnlineCount();
 					if (friendCounter && friendCounter.props.amount != amount) {
 						friendCounter.props.amount = amount;
 						BDFDB.ReactUtils.forceUpdate(friendCounter);
@@ -835,8 +816,8 @@ module.exports = (_ => {
 					for (let id in observedUsers) if (!observedUsers[id].disabled) {
 						let user = BDFDB.LibraryModules.UserStore.getUser(id);
 						let status = this.getStatusWithMobileAndActivity(id, observedUsers[id], clientStatuses);
-						let customChanged = false;
-						if (user && observedUsers[id][status.name] && (
+						let customChanged = false, loginNotice = false;
+						if (user && (!observedUsers[id][status.name] && observedUsers[id].login && status.name != BDFDB.DiscordConstants.StatusTypes.OFFLINE && userStatusStore[id].name == BDFDB.DiscordConstants.StatusTypes.OFFLINE && (loginNotice = true) || observedUsers[id][status.name] && (
 							observedUsers[id].custom && (
 								userStatusStore[id].custom != status.custom && ((customChanged = status.custom) || true) ||
 								(customChanged = status.custom && !this.activityIsSame(id, status))
@@ -844,7 +825,7 @@ module.exports = (_ => {
 							observedUsers[id].mobile && userStatusStore[id].mobile != status.mobile ||
 							statuses[status.name].checkActivity && !this.activityIsSame(id, status) ||
 							userStatusStore[id].name != status.name
-						)) {
+						))) {
 							let EUdata = BDFDB.BDUtils.isPluginEnabled("EditUsers") && BDFDB.DataUtils.load("EditUsers", "users", user.id) || {};
 							let name = EUdata.name || user.username;
 							let avatar = EUdata.removeIcon ? "" : (EUdata.url || BDFDB.UserUtils.getAvatar(user.id));
@@ -853,14 +834,15 @@ module.exports = (_ => {
 							let statusName = this.getStatusName(id, status);
 							let oldStatusName = this.getStatusName(id, userStatusStore[id]);
 							
-							let string = this.settings.notificationStrings[customChanged ? "custom" : status.name] || "'$user' changed status to '$status'";
+							let string = this.settings.notificationStrings[customChanged ? "custom" : loginNotice ? "login" : status.name] || "'$user' changed status to '$status'";
 							let toastString = BDFDB.StringUtils.htmlEscape(string).replace(/'{0,1}\$user'{0,1}/g, `<strong>${BDFDB.StringUtils.htmlEscape(name)}</strong>${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}`).replace(/'{0,1}\$statusOld'{0,1}/g, `<strong>${oldStatusName}</strong>`).replace(/'{0,1}\$status'{0,1}/g, `<strong>${statusName}</strong>`);
 							if (status.activity) toastString = toastString.replace(/'{0,1}\$song'{0,1}|'{0,1}\$game'{0,1}/g, `<strong>${status.activity.name || status.activity.details || ""}</strong>`).replace(/'{0,1}\$artist'{0,1}|'{0,1}\$custom'{0,1}/g, `<strong>${[status.activity.emoji && status.activity.emoji.name, status.activity.state].filter(n => n).join(" ") || ""}</strong>`);
 							
 							let statusType = BDFDB.UserUtils.getStatus(user.id);
-							timeLog.unshift({
+							if (observedUsers[id].timelog == undefined || observedUsers[id].timelog) timeLog.unshift({
 								string: toastString,
 								avatar: avatar,
+								id: id,
 								name: name,
 								status: statusType,
 								mobile: status.mobile,
@@ -874,12 +856,12 @@ module.exports = (_ => {
 									if (this.settings.general.openOnClick) {
 										let DMid = BDFDB.LibraryModules.ChannelStore.getDMFromUserId(user.id)
 										if (DMid) BDFDB.LibraryModules.ChannelUtils.selectPrivateChannel(DMid);
-										else BDFDB.LibraryModules.DirectMessageUtils.openPrivateChannel(BDFDB.UserUtils.me.id, user.id);
+										else BDFDB.LibraryModules.DirectMessageUtils.openPrivateChannel(user.id);
 										BDFDB.LibraryModules.WindowUtils.focus();
 									}
 								};
-								if (observedUsers[id][status.name] == notificationTypes.DESKTOP.value) {
-									let desktopString = string.replace(/\$user/g, `${name}${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}`).replace(/\$status/g, statusName).replace(/\$statusOld/g, oldStatusName);
+								if ((loginNotice ? observedUsers[id].login : observedUsers[id][status.name]) == notificationTypes.DESKTOP.value) {
+									let desktopString = string.replace(/\$user/g, `${name}${this.settings.general.showDiscriminator ? ("#" + user.discriminator) : ""}`).replace(/\$statusOld/g, oldStatusName).replace(/\$status/g, statusName);
 									if (status.activity) desktopString = desktopString.replace(/\$song|\$game/g, status.activity.name || status.activity.details || "").replace(/\$artist|\$custom/g, [status.activity.emoji && status.activity.emoji.name, status.activity.state].filter(n => n).join(" ") || "");
 									if (status.mobile) desktopString += " (mobile)";
 									let notificationSound = this.settings.notificationSounds["desktop" + status.name] || {};
@@ -938,7 +920,7 @@ module.exports = (_ => {
 						BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Button, {
 							color: BDFDB.LibraryComponents.Button.Colors.RED,
 							size: BDFDB.LibraryComponents.Button.Sizes.TINY,
-							look: BDFDB.LibraryComponents.Button.Looks.GHOST,
+							look: BDFDB.LibraryComponents.Button.Looks.OUTLINE,
 							style: {marginLeft: 6, marginRight: 12},
 							children: BDFDB.LanguageUtils.LanguageStrings.BUILD_OVERRIDE_CLEAR,
 							onClick: _ => BDFDB.ModalUtils.confirm(this, this.labels.clear_log, _ => {
@@ -950,7 +932,7 @@ module.exports = (_ => {
 						BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SearchBar, {
 							autoFocus: true,
 							query: "",
-							onChange: (value, instance) => {
+							onChange: value => {
 								BDFDB.TimeUtils.clear(searchTimeout);
 								searchTimeout = BDFDB.TimeUtils.timeout(_ => {
 									let searchString = value.toUpperCase();
@@ -958,7 +940,7 @@ module.exports = (_ => {
 									BDFDB.ReactUtils.forceUpdate(timeLogList);
 								}, 1000);
 							},
-							onClear: instance => {
+							onClear: _ => {
 								timeLogList.props.entries = timeLog;
 								BDFDB.ReactUtils.forceUpdate(timeLogList);
 							}
@@ -1119,14 +1101,14 @@ module.exports = (_ => {
 					case "zh-CN":	// Chinese (China)
 						return {
 							clear_log:							"您确定要清除时间记录吗？",
-							status_listening:					"倾听",
-							status_playing:						"玩"
+							status_listening:					"聆听中",
+							status_playing:						"游戏中"
 						};
 					case "zh-TW":	// Chinese (Taiwan)
 						return {
 							clear_log:							"您確定要清除時間記錄嗎？",
-							status_listening:					"傾聽",
-							status_playing:						"玩"
+							status_listening:					"聆聽中",
+							status_playing:						"遊戲中"
 						};
 					default:		// English
 						return {

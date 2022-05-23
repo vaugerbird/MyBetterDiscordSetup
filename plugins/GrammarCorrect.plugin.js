@@ -1,6 +1,6 @@
 /**
  * @name GrammarCorrect
- * @version 1.0.0
+ * @version 1.0.5
  * @description Corrects your grammar mistakes just like Grammarly
  * @author QWERT
  * @source https://github.com/QWERTxD/BetterDiscordPlugins/GrammarCorrect
@@ -32,7 +32,7 @@
 const config = {
 	"info": {
 		"name": "GrammarCorrect",
-		"version": "1.0.0",
+		"version": "1.0.5",
 		"description": "Corrects your grammar mistakes just like Grammarly",
 		"authors": [{
 			"name": "QWERT",
@@ -119,17 +119,13 @@ function buildPlugin([BasePlugin, PluginApi]) {
 			ComponentDispatch
 		} = getByProps("ComponentDispatch");
 		const Menu = getByProps("MenuItem");
-		const SlateTextAreaContextMenu = get((m => {
-			var _m$default;
-			return "SlateTextAreaContextMenu" === (null === m || void 0 === m ? void 0 : null === (_m$default = m.default) || void 0 === _m$default ? void 0 : _m$default.displayName);
-		}));
 		const ChannelTextAreaContainer = get((m => {
 			var _m$type, _m$type$render;
 			return "ChannelTextAreaContainer" === (null === m || void 0 === m ? void 0 : null === (_m$type = m.type) || void 0 === _m$type ? void 0 : null === (_m$type$render = _m$type.render) || void 0 === _m$type$render ? void 0 : _m$type$render.displayName);
 		}));
 		const SwitchItem = getByName("SwitchItem");
 		class GrammarCorrect extends(external_BasePlugin_default()) {
-			onStart() {
+			async onStart() {
 				this.patch();
 				this.patchSendMessage();
 				console.log("%cGrammarCorrect", "background: #03C197; color: white; padding: 2px; border-radius: 4px; font-weight: 600;", "Successfully started.");
@@ -150,8 +146,11 @@ function buildPlugin([BasePlugin, PluginApi]) {
 					}));
 				}));
 			}
-			patch() {
+			async patch() {
+				const SlateTextAreaContextMenu = await ZeresPluginLibrary.DCM.getDiscordMenu("SlateTextAreaContextMenu");
+																							
 				Patcher.after("grammar", SlateTextAreaContextMenu, "default", ((_this, [props], ret) => {
+																																				
 					const children = ret.props.children;
 					let text = "";
 					Patcher.after("grammar", ChannelTextAreaContainer.type, "render", ((_, [{
@@ -169,7 +168,7 @@ function buildPlugin([BasePlugin, PluginApi]) {
 								duration: 200,
 								intensity: 3
 							});
-							const textArea = document.querySelector(".textArea-12jD-V");
+							const textArea = document.querySelector(".textArea-2CLwUE");
 							const editor = getInternalInstance(textArea).return.stateNode.editorRef;
 							editor.moveToRangeOfDocument();
 							editor.delete();

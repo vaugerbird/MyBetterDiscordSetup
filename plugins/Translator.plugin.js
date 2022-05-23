@@ -1,32 +1,24 @@
 /**
- * @name GoogleTranslateOption
+ * @name Translator
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 2.2.7
- * @description Allows you to translate Messages and your outgoing Message within Discord
+ * @version 2.3.8
+ * @description Allows you to translate Messages and your outgoing Messages within Discord
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
  * @patreon https://www.patreon.com/MircoWittrien
  * @website https://mwittrien.github.io/
- * @source https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/GoogleTranslateOption/
- * @updateUrl https://mwittrien.github.io/BetterDiscordAddons/Plugins/GoogleTranslateOption/GoogleTranslateOption.plugin.js
+ * @source https://github.com/mwittrien/BetterDiscordAddons/tree/master/Plugins/Translator/
+ * @updateUrl https://mwittrien.github.io/BetterDiscordAddons/Plugins/Translator/Translator.plugin.js
  */
 
 module.exports = (_ => {
 	const config = {
 		"info": {
-			"name": "GoogleTranslateOption",
+			"name": "Translator",
 			"author": "DevilBro",
-			"version": "2.2.7",
-			"description": "Allows you to translate Messages and your outgoing Message within Discord"
-		},
-		"changeLog": {
-			"added": {
-				"Auth Keys": "You can now set your own auth keys in the plugin settings, make sure they are formatted in the same way as the placeholder"
-			},
-			"fixed": {
-				"Papago": "Works again"
-			}
+			"version": "2.3.8",
+			"description": "Allows you to translate Messages and your outgoing Messages within Discord"
 		}
 	};
 	
@@ -79,7 +71,7 @@ module.exports = (_ => {
 			render() {
 				const enabled = _this.isTranslationEnabled(this.props.channelId);
 				return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.ChannelTextAreaButton, {
-					className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN._googletranslateoptiontranslatebutton, _this.isTranslationEnabled(this.props.channelId) && BDFDB.disCN._googletranslateoptiontranslating, BDFDB.disCN.textareapickerbutton),
+					className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN._translatortranslatebutton, _this.isTranslationEnabled(this.props.channelId) && BDFDB.disCN._translatortranslating, BDFDB.disCN.textareapickerbutton),
 					isActive: this.props.isActive,
 					iconSVG: translateIcon,
 					nativeClass: true,
@@ -122,7 +114,7 @@ module.exports = (_ => {
 				}))).filter(isOutput && this.isOnlyBackup(languages[_this.getLanguageChoice(languageTypes.INPUT, place, this.props.channelId)]) ? (n => n.backup) : (n => n));
 			}
 			isOnlyBackup(lang) {
-				return lang.auto && !translationEngines[_this.settings.engines.translator].auto || !lang.auto && !lang.special && !translationEngines[_this.settings.engines.translator].languages.includes(lang.id);
+				return lang && (lang.auto && !translationEngines[_this.settings.engines.translator].auto || !lang.auto && !lang.special && !translationEngines[_this.settings.engines.translator].languages.includes(lang.id));
 			}
 			render() {
 				return [
@@ -176,7 +168,7 @@ module.exports = (_ => {
 									}
 								}].map(data => {
 									const icon = BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Clickable, {
-										className: BDFDB.disCN._googletranslateoptionconfigbutton,
+										className: BDFDB.disCN._translatorconfigbutton,
 										onClick: data.onClick,
 										children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SvgIcon, {
 											width: 24,
@@ -279,7 +271,7 @@ module.exports = (_ => {
 			"0":"−−−−−", "1":"·−−−−", "2":"··−−−", "3":"···−−", "4":"····−", "5":"·····", "6":"−····", "7":"−−···", "8":"−−−··", "9":"−−−−·", "!":"−·−·−−", "\"":"·−··−·", "$":"···−··−", "&":"·−···", "'":"·−−−−·", "(":"−·−−·", ")":"−·−−·−", "+":"·−·−·", ",":"−−··−−", "-":"−····−", ".":"·−·−·−", "/":"−··−·", ":":"−−−···", ";":"−·−·−·", "=":"−···−", "?":"··−−··", "@":"·−−·−·", "a":"·−", "b":"−···", "c":"−·−·", "d":"−··", "e":"·", "f":"··−·", "g":"−−·", "h":"····", "i":"··", "j":"·−−−", "k":"−·−", "l":"·−··", "m":"−−", "n":"−·", "o":"−−−", "p":"·−−·", "q":"−−·−", "r":"·−·", "s":"···", "t":"−", "u":"··−", "v":"···−", "w":"·−−", "x":"−··−", "y":"−·−−", "z":"−−··", "·":"e", "··":"i", "···":"s", "····":"h", "·····":"5", "····−":"4", "···−":"v", "···−··−":"$", "···−−":"3", "··−":"u", "··−·":"f", "··−−··":"?", "··−−·−":"_", "··−−−":"2", "·−":"a", "·−·":"r", "·−··":"l", "·−···":"&", "·−··−·":"\"", "·−·−·":"+", "·−·−·−":".", "·−−":"w", "·−−·":"p", "·−−·−·":"@", "·−−−":"j", "·−−−−":"1", "·−−−−·":"'", "−":"t", "−·":"n", "−··":"d", "−···":"b", "−····":"6", "−····−":"-", "−···−":"=", "−··−":"x", "−··−·":"/", "−·−":"k", "−·−·":"c", "−·−·−·":";", "−·−·−−":"!", "−·−−":"y", "−·−−·":"(", "−·−−·−":")", "−−":"m", "−−·":"g", "−−··":"z", "−−···":"7", "−−··−−":",", "−−·−":"q", "−−−":"o", "−−−··":"8", "−−−···":":", "−−−−·":"9", "−−−−−":"0", "_":"··−−·−"
 		};
 		
-		const googleLanguages = ["af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de","el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha","haw","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw","ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk","ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt","ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv","sw","ta","te","tg","th","tk","tl","tr","tt","ug","uk","ur","uz","vi","xh","yi","yo","zh-CN","zu"];
+		const googleLanguages = ["af","am","ar","az","be","bg","bn","bs","ca","ceb","co","cs","cy","da","de","el","en","eo","es","et","eu","fa","fi","fr","fy","ga","gd","gl","gu","ha","haw","hi","hmn","hr","ht","hu","hy","id","ig","is","it","iw","ja","jw","ka","kk","km","kn","ko","ku","ky","la","lb","lo","lt","lv","mg","mi","mk","ml","mn","mr","ms","mt","my","ne","nl","no","ny","or","pa","pl","ps","pt","ro","ru","rw","sd","si","sk","sl","sm","sn","so","sq","sr","st","su","sv","sw","ta","te","tg","th","tk","tl","tr","tt","ug","uk","ur","uz","vi","xh","yi","yo","zh-CN","zh-TW","zu"];
 		const translationEngines = {
 			googleapi: {
 				name: "Google",
@@ -292,6 +284,7 @@ module.exports = (_ => {
 				auto: true,
 				funcName: "deepLTranslate",
 				languages: ["bg","cs","da","de","en","el","es","et","fi","fr","hu","it","ja","lt","lv","nl","pl","pt","ro","ru","sk","sl","sv","zh"],
+				premium: true,
 				key: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx"
 			},
 			itranslate: {
@@ -314,6 +307,30 @@ module.exports = (_ => {
 				funcName: "papagoTranslate",
 				languages: ["en","es","fr","id","ja","ko","th","vi","zh-CN","zh-TW"],
 				key: "xxxxxxxxxxxxxxxxxxxx xxxxxxxxxx"
+			},
+			baidu: {
+				name: "Baidu",
+				auto: true,
+				funcName: "baiduTranslate",
+				languages: ["ar","bg","cs","da","de","el","en","es","et","fi","fr","hu","it","jp","ko","nl","pl","pt","ro","ru","sl","sv","th","vi","zh","zh-CN","zh-TW"],
+				parser: {
+					"ar": "ara",
+					"bg": "bul",
+					"da": "dan",
+					"es": "spa",
+					"et": "est",
+					"fi": "fin",
+					"fr": "fra",
+					"ko": "kor",
+					"ro": "rom",
+					"sl": "slo",
+					"sv": "swe",
+					"vi": "vie",
+					"zh": "wyw",
+					"zh-CN": "zh",
+					"zh-TW": "cht"
+				},
+				key: "xxxxxxxxx xxxxxx xxxxxxxxxx"
 			}
 		};
 		
@@ -337,7 +354,7 @@ module.exports = (_ => {
 			SENT: "sent",
 		};
 	
-		return class GoogleTranslateOption extends Plugin {
+		return class Translator extends Plugin {
 			onLoad () {
 				_this = this;
 				
@@ -366,7 +383,7 @@ module.exports = (_ => {
 						Embed: "render"
 					},
 					after: {
-						ChannelTextAreaContainer: "render",
+						ChannelTextAreaButtons: "type",
 						Messages: "type",
 						MessageContent: "type",
 						Embed: "render"
@@ -374,21 +391,16 @@ module.exports = (_ => {
 				};
 
 				this.css = `
-					${BDFDB.dotCN._googletranslateoptiontranslatebutton + BDFDB.dotCNS._googletranslateoptiontranslating + BDFDB.dotCN.textareaicon} {
+					${BDFDB.dotCN._translatortranslatebutton + BDFDB.dotCNS._translatortranslating + BDFDB.dotCN.textareaicon} {
 						color: var(--bdfdb-red) !important;
 					}
-					${BDFDB.dotCN._googletranslateoptionconfigbutton} {
+					${BDFDB.dotCN._translatorconfigbutton} {
 						margin: 2px 3px 0 6px;
 					}
 				`;
 			}
 			
 			onStart () {
-				// REMOVE 25.05.2021
-				let loadedFavorites = BDFDB.DataUtils.load(this, "favorites");
-				if (BDFDB.ObjectUtils.is(loadedFavorites) && Object.keys(loadedFavorites).length) BDFDB.DataUtils.save(Object.keys(loadedFavorites), this, "favorites")
-				
-				
 				this.forceUpdateAll();
 			}
 			
@@ -417,13 +429,44 @@ module.exports = (_ => {
 						
 						settingsItems.push(BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsPanelList, {
 							title: "Own Auth Keys:",
-							children: Object.keys(translationEngines).filter(key => translationEngines[key].key).map(key => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
-								type: "TextInput",
-								basis: "75%",
-								label: translationEngines[key].name,
-								placeholder: translationEngines[key].key,
-								value: authKeys[key],
-								onChange: value => BDFDB.DataUtils.save((value || "").trim(), this, "authKeys", key)
+							children: Object.keys(translationEngines).filter(key => translationEngines[key].key).map(key => BDFDB.ReactUtils.createElement("div", {
+								className: BDFDB.disCN.marginbottom8,
+								children: [
+									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex, {
+										className: BDFDB.disCN.marginbottom8,
+										align: BDFDB.LibraryComponents.Flex.Align.CENTER,
+										direction: BDFDB.LibraryComponents.Flex.Direction.HORIZONTAL,
+										children: [
+											BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.FormComponents.FormTitle, {
+												className: BDFDB.disCN.marginreset,
+												tag: BDFDB.LibraryComponents.FormComponents.FormTitle.Tags.H5,
+												children: translationEngines[key].name
+											}),
+											translationEngines[key].premium && BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsItem, {
+												type: "Switch",
+												margin: 0,
+												grow: 0,
+												label: "Paid Version",
+												tag: BDFDB.LibraryComponents.FormComponents.FormTitle.Tags.H5,
+												value: authKeys[key] && authKeys[key].paid,
+												onChange: value => {
+													if (!authKeys[key]) authKeys[key] = {};
+													authKeys[key].paid = value;
+													BDFDB.DataUtils.save(authKeys, this, "authKeys");
+												}
+											})
+										]
+									}),
+									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.TextInput, {
+										placeholder: translationEngines[key].key,
+										value: authKeys[key] && authKeys[key].key,
+										onChange: value => {
+											if (!authKeys[key]) authKeys[key] = {};
+											authKeys[key].key = (value || "").trim();
+											BDFDB.DataUtils.save(authKeys, this, "authKeys");
+										}
+									})
+								]
 							}))
 						}));
 						
@@ -478,10 +521,11 @@ module.exports = (_ => {
 					children.splice(index > -1 ? index + 1 : 0, 0, BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
 						label: translated ? this.labels.context_messageuntranslateoption : this.labels.context_messagetranslateoption,
 						id: BDFDB.ContextMenuUtils.createItemId(this.name, translated ? "untranslate-message" : "translate-message"),
-						hint: hint && (_ => {
-							return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuHint, {
-								hint: hint
-							});
+						hint: hint && (_ => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuHint, {
+							hint: hint
+						})),
+						icon: _ => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuIcon, {
+							icon: translated ? translateIconUntranslate : translateIcon
 						}),
 						disabled: !translated && isTranslating,
 						action: _ => this.translateMessage(e.instance.props.message, e.instance.props.channel)
@@ -507,7 +551,7 @@ module.exports = (_ => {
 						children: BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuItem, {
 							id: BDFDB.ContextMenuUtils.createItemId(this.name, "search-translation"),
 							disabled: isTranslating,
-							label: this.labels.context_googletranslateoption,
+							label: this.labels.context_translator,
 							persisting: true,
 							action: event => {
 								let item = BDFDB.DOMUtils.getParent(BDFDB.dotCN.menuitem, event.target);
@@ -555,11 +599,9 @@ module.exports = (_ => {
 						label: translated ? this.labels.context_messageuntranslateoption : this.labels.context_messagetranslateoption,
 						disabled: isTranslating,
 						id: BDFDB.ContextMenuUtils.createItemId(this.name, translated ? "untranslate-message" : "translate-message"),
-						icon: _ => {
-							return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuIcon, {
-								icon: translated ? translateIconUntranslate : translateIcon
-							});
-						},
+						icon: _ => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuIcon, {
+							icon: translated ? translateIconUntranslate : translateIcon
+						}),
 						action: _ => this.translateMessage(e.instance.props.message, e.instance.props.channel)
 					}));
 				}
@@ -595,18 +637,18 @@ module.exports = (_ => {
 			
 			processChannelTextAreaForm (e) {
 				BDFDB.PatchUtils.patch(this, e.instance, "handleSendMessage", {instead: e2 => {
-					if (this.isTranslationEnabled(e.instance.props.channel.id)) {
+					if (this.isTranslationEnabled(e.instance.props.channel.id) && e2.methodArguments[0].value) {
 						e2.stopOriginalMethodCall();
-						this.translateText(e2.methodArguments[0], messageTypes.SENT, (translation, input, output) => {
-							translation = !translation ? e2.methodArguments[0] : (this.settings.general.sendOriginalMessage ? (e2.methodArguments[0] + "\n\n" + translation) : translation);
-							e2.originalMethod(translation);
+						this.translateText(e2.methodArguments[0].value, messageTypes.SENT, (translation, input, output) => {
+							translation = !translation ? e2.methodArguments[0].value : (this.settings.general.sendOriginalMessage ? (translation + "\n\n> *" + e2.methodArguments[0].value.split("\n").join("*\n> *") + "*") : translation);
+							e2.originalMethod(Object.assign({}, e2.methodArguments[0], {value: translation}));
 						});
 						return Promise.resolve({
 							shouldClear: true,
 							shouldRefocus: true
 						});
 					}
-					else return e2.callOriginalMethodAfterwards();
+					return e2.callOriginalMethodAfterwards();
 				}}, {force: true, noCache: true});
 			}
 
@@ -614,15 +656,11 @@ module.exports = (_ => {
 				if (this.isTranslationEnabled(e.instance.props.channel.id) && isTranslating) e.instance.props.disabled = true;
 			}
 			
-			processChannelTextAreaContainer (e) {
-				if (this.settings.general.addTranslateButton) {
-					let editor = BDFDB.ReactUtils.findChild(e.returnvalue, {name: "ChannelEditorContainer"});
-					if (editor && editor.props.type == BDFDB.DiscordConstants.TextareaTypes.NORMAL && !editor.props.disabled) {
-						let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {props: [["className", BDFDB.disCN.textareapickerbuttons]]});
-						if (index > -1 && children[index].props && children[index].props.children) children[index].props.children.unshift(BDFDB.ReactUtils.createElement(TranslateButtonComponent, {
-							channelId: e.instance.props.channel.id
-						}));
-					}
+			processChannelTextAreaButtons (e) {
+				if (this.settings.general.addTranslateButton && (e.instance.props.type == BDFDB.LibraryComponents.ChannelTextAreaTypes.NORMAL || e.instance.props.type == BDFDB.LibraryComponents.ChannelTextAreaTypes.NORMAL_WITH_ACTIVITY || e.instance.props.type == BDFDB.LibraryComponents.ChannelTextAreaTypes.SIDEBAR) && !e.instance.props.disabled) {
+					e.returnvalue.props.children.unshift(BDFDB.ReactUtils.createElement(TranslateButtonComponent, {
+						channelId: e.instance.props.channel.id
+					}));
 				}
 			}
 
@@ -656,7 +694,7 @@ module.exports = (_ => {
 						text: `${BDFDB.LanguageUtils.getName(translation.input)} ➝ ${BDFDB.LanguageUtils.LibraryStrings.to} ${BDFDB.LanguageUtils.getName(translation.output)}`,
 						tooltipConfig: {style: "max-width: 400px"},
 						children: BDFDB.ReactUtils.createElement("span", {
-							className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.messagetimestamp, BDFDB.disCN.messagetimestampinline, BDFDB.disCN._googletranslateoptiontranslated),
+							className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.messagetimestamp, BDFDB.disCN.messagetimestampinline, BDFDB.disCN._translatortranslated),
 							children: BDFDB.ReactUtils.createElement("span", {
 								className: BDFDB.disCN.messageedited,
 								children: `(${this.labels.translated_watermark})`
@@ -680,7 +718,7 @@ module.exports = (_ => {
 								text: `${BDFDB.LanguageUtils.getName(translation.input)} ➝ ${BDFDB.LanguageUtils.getName(translation.output)}`,
 								tooltipConfig: {style: "max-width: 400px"},
 								children: BDFDB.ReactUtils.createElement("span", {
-									className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.messagetimestamp, BDFDB.disCN.messagetimestampinline, BDFDB.disCN._googletranslateoptiontranslated),
+									className: BDFDB.DOMUtils.formatClassName(BDFDB.disCN.messagetimestamp, BDFDB.disCN.messagetimestampinline, BDFDB.disCN._translatortranslated),
 									children: BDFDB.ReactUtils.createElement("span", {
 										className: BDFDB.disCN.messageedited,
 										children: `(${this.labels.translated_watermark})`
@@ -717,7 +755,7 @@ module.exports = (_ => {
 					!engine.auto && !backup.auto ? {} : {
 						auto: {
 							auto: true,
-							name: "Auto",
+							name: "Detect Language",
 							id: "auto"
 						}
 					},
@@ -802,7 +840,6 @@ module.exports = (_ => {
 				let toast = null, toastInterval, finished = false, finishTranslation = translation => {
 					isTranslating = false;
 					if (toast) toast.close();
-					BDFDB.TimeUtils.clear(toastInterval);
 					
 					if (finished) return;
 					finished = true;
@@ -837,25 +874,19 @@ module.exports = (_ => {
 							if (toast) toast.close();
 							BDFDB.TimeUtils.clear(toastInterval);
 							
-							let loadingString = `${this.labels.toast_translating} (${translationEngines[engine].name}) - ${BDFDB.LanguageUtils.LibraryStrings.please_wait}`;
-							let currentLoadingString = loadingString;
-							toast = BDFDB.NotificationUtils.toast(loadingString, {
+							toast = BDFDB.NotificationUtils.toast(`${this.labels.toast_translating} (${translationEngines[engine].name}) - ${BDFDB.LanguageUtils.LibraryStrings.please_wait}`, {
 								timeout: 0,
+								ellipsis: true,
 								position: "center",
 								onClose: _ => BDFDB.TimeUtils.clear(toastInterval)
 							});
 							toastInterval = BDFDB.TimeUtils.interval((_, count) => {
-								if (count > 40) {
-									finishTranslation("");
-									BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed} (${translationEngines[engine].name}) - ${this.labels.toast_translating_tryanother}`, {
-										type: "danger",
-										position: "center"
-									});
-								}
-								else {
-									currentLoadingString = currentLoadingString.endsWith(".....") ? loadingString : currentLoadingString + ".";
-									toast.update(currentLoadingString);
-								}
+								if (count < 40) return;
+								finishTranslation("");
+								BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed} (${translationEngines[engine].name}) - ${this.labels.toast_translating_tryanother}`, {
+									type: "danger",
+									position: "center"
+								});
 							}, 500);
 						};
 						if (this.validTranslator(this.settings.engines.translator, input, output, specialCase)) {
@@ -896,7 +927,7 @@ module.exports = (_ => {
 						catch (err) {callback("");}
 					}
 					else {
-						if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Request Limit per Hour reached.`, {
+						if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Hourly Request Limit reached.`, {
 							type: "danger",
 							position: "center"
 						});
@@ -910,7 +941,7 @@ module.exports = (_ => {
 			}
 			
 			deepLTranslate (data, callback) {
-				BDFDB.LibraryRequires.request(`https://api-free.deepl.com/v2/translate?auth_key=${authKeys.deepl || "75cc2f40-fdae-14cd-7242-6a384e2abb9c:fx"}&text=${encodeURIComponent(data.text)}${data.input.auto ? "" : `&source_lang=${data.input.id}`}&target_lang=${data.output.id}`, (error, response, body) => {
+				BDFDB.LibraryRequires.request(`${authKeys.deepl && authKeys.deepl.paid ? "https://api.deepl.com/v2/translate" : "https://api-free.deepl.com/v2/translate"}?auth_key=${authKeys.deepl && authKeys.deepl.key || "75cc2f40-fdae-14cd-7242-6a384e2abb9c:fx"}&text=${encodeURIComponent(data.text)}${data.input.auto ? "" : `&source_lang=${data.input.id}`}&target_lang=${data.output.id}`, (error, response, body) => {
 					if (!error && body && response.statusCode == 200) {
 						try {
 							body = JSON.parse(body);
@@ -923,7 +954,7 @@ module.exports = (_ => {
 						catch (err) {callback("");}
 					}
 					else {
-						if (response.statusCode == 429 || response.statusCode == 456) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Request Limit reached.`, {
+						if (response.statusCode == 429 || response.statusCode == 456) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Daily Request Limit reached.`, {
 							type: "danger",
 							position: "center"
 						});
@@ -945,7 +976,7 @@ module.exports = (_ => {
 					BDFDB.LibraryRequires.request.post({
 						url: "https://web-api.itranslateapp.com/v3/texts/translate",
 						headers: {
-							"API-KEY": authKeys.itranslate || data.engine.APIkey
+							"API-KEY": authKeys.itranslate && authKeys.itranslate.key || data.engine.APIkey
 						},
 						body: JSON.stringify({
 							source: {
@@ -969,7 +1000,7 @@ module.exports = (_ => {
 							catch (err) {callback("");}
 						}
 						else {
-							if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Request Limit reached.`, {
+							if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Daily Request Limit reached.`, {
 								type: "danger",
 								position: "center"
 							});
@@ -985,7 +1016,7 @@ module.exports = (_ => {
 						}
 					});
 				};
-				if (authKeys.itranslate || data.engine.APIkey) translate();
+				if (authKeys.itranslate && authKeys.itranslate.key || data.engine.APIkey) translate();
 				else BDFDB.LibraryRequires.request("https://www.itranslate.com/js/webapp/main.js", {gzip: true}, (error, response, body) => {
 					if (!error && body) {
 						let APIkey = /var API_KEY = "(.+)"/.exec(body);
@@ -1000,22 +1031,25 @@ module.exports = (_ => {
 			}
 			
 			yandexTranslate (data, callback) {
-				BDFDB.LibraryRequires.request(`https://translate.yandex.net/api/v1.5/tr/translate?key=${authKeys.yandex || "trnsl.1.1.20191206T223907Z.52bd512eca953a5b.1ec123ce4dcab3ae859f312d27cdc8609ab280de"}&text=${encodeURIComponent(data.text)}&lang=${data.specialCase || data.input.auto ? data.output.id : (data.input.id + "-" + data.output.id)}&options=1`, (error, response, body) => {
+				BDFDB.LibraryRequires.request(`https://translate.yandex.net/api/v1.5/tr/translate?key=${authKeys.yandex && authKeys.yandex.key || "trnsl.1.1.20191206T223907Z.52bd512eca953a5b.1ec123ce4dcab3ae859f312d27cdc8609ab280de"}&text=${encodeURIComponent(data.text)}&lang=${data.specialCase || data.input.auto ? data.output.id : (data.input.id + "-" + data.output.id)}&options=1`, (error, response, body) => {
 					if (!error && body && response.statusCode == 200) {
-						body = BDFDB.DOMUtils.create(body);
-						let translation = body.querySelector("text");
-						let detected = body.querySelector("detected");
-						if (translation && detected) {
-							let detectedLang = detected.getAttribute("lang");
-							if (!data.specialCase && detectedLang && languages[detectedLang]) {
-								data.input.name = languages[detectedLang].name;
-								data.input.ownlang = languages[detectedLang].ownlang;
+						try {
+							body = BDFDB.DOMUtils.create(body);
+							let translation = body.querySelector("text");
+							let detected = body.querySelector("detected");
+							if (translation && detected) {
+								let detectedLang = detected.getAttribute("lang");
+								if (!data.specialCase && detectedLang && languages[detectedLang]) {
+									data.input.name = languages[detectedLang].name;
+									data.input.ownlang = languages[detectedLang].ownlang;
+								}
+								callback(translation.innerText);
 							}
-							callback(translation.innerText);
+							else callback("");
 						}
-						else callback("");
+						catch (err) {callback("");}
 					}
-					if (body && body.indexOf('code="408"') > -1) {
+					else if (body && body.indexOf('code="408"') > -1) {
 						BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Monthly Request Limit reached.`, {
 							type: "danger",
 							position: "center"
@@ -1033,7 +1067,7 @@ module.exports = (_ => {
 			}
 			
 			papagoTranslate (data, callback) {
-				const credentials = (authKeys.papago || "kUNGxtAmTJQFbaFehdjk zC70k3VhpM").split(" ");
+				const credentials = (authKeys.papago && authKeys.papago.key || "kUNGxtAmTJQFbaFehdjk zC70k3VhpM").split(" ");
 				BDFDB.LibraryRequires.request.post({
 					url: "https://openapi.naver.com/v1/papago/n2mt",
 					form: {
@@ -1056,7 +1090,7 @@ module.exports = (_ => {
 						catch (err) {callback("");}
 					}
 					else {
-						if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Request Limit per Hour is reached.`, {
+						if (response.statusCode == 429) BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Hourly Request Limit reached.`, {
 							type: "danger",
 							position: "center"
 						});
@@ -1067,6 +1101,98 @@ module.exports = (_ => {
 						callback("");
 					}
 				});
+			}
+			
+			baiduTranslate (data, callback) {
+				const credentials = (authKeys.baidu && authKeys.baidu.key || "20210425000799880 e12h9h4rh39r8h12r8 D90usZcbznwthzKC1KOb").split(" ");
+				BDFDB.LibraryRequires.request.post({
+					url: "https://fanyi-api.baidu.com/api/trans/vip/translate",
+					form: {
+						from: translationEngines.baidu.parser[data.input.id] || data.input.id,
+						to: translationEngines.baidu.parser[data.output.id] || data.output.id,
+						q: data.text,
+						appid: credentials[0],
+						salt: credentials[1],
+						sign: this.MD5(credentials[0] + data.text + credentials[1] + credentials[2])
+					}
+				}, (error, response, result) => {
+					if (!error && result && response.statusCode == 200) {
+						try {
+							result = JSON.parse(result) || {};
+							if (!result.error_code) {
+								let messages = result.trans_result;
+								if (messages && messages.length > 0 && result.from != result.to) callback(messages.map(message => decodeURIComponent(message.dst)).join("\n"));
+								else {callback("");}
+							}
+							else {
+								BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. ${result.error_code} : ${result.error_msg}.`, {
+									type: "danger",
+									position: "center"
+								});
+								callback("");
+							}
+						}
+						catch (err) {callback("");}
+					}
+					else {
+						BDFDB.NotificationUtils.toast(`${this.labels.toast_translating_failed}. ${this.labels.toast_translating_tryanother}. Translation Server is down.`, {
+							type: "danger",
+							position: "center"
+						});
+						callback("");
+					}
+				});
+			}
+			
+			MD5 (e) {
+				function h(a, b) {
+					var e = a & 2147483648, f = b & 2147483648, c = a & 1073741824, d = b & 1073741824, g = (a & 1073741823) + (b & 1073741823);
+					return c & d ? g ^ 2147483648 ^ e ^ f : c | d ? g & 1073741824 ? g ^ 3221225472 ^ e ^ f : g ^ 1073741824 ^ e ^ f : g ^ e ^ f
+				}
+				function k(a, b, c, d, e, f, g) {
+					a = h(a, h(h(b & c | ~b & d, e), g));
+					return h(a << f | a >>> 32 - f, b);
+				}
+				function l(a, b, c, d, e, f, g) {
+					a = h(a, h(h(b & d | c & ~d, e), g));
+					return h(a << f | a >>> 32 - f, b);
+				}
+				function m(a, b, d, c, e, f, g) {
+					a = h(a, h(h(b ^ d ^ c, e), g));
+					return h(a << f | a >>> 32 - f, b)
+				}
+				function n(a, b, d, c, e, f, g) {
+					a = h(a, h(h(d ^ (b | ~c), e), g));
+					return h(a << f | a >>> 32 - f, b);
+				}
+				function p(a) {
+					var b = "", d = "", c;
+					for (c = 0; 3 >= c; c++) d = a >>> 8 * c & 255, d = "0" + d.toString(16), b += d.substr(d.length - 2, 2);
+					return b;
+				}
+				
+				var f = [], q, r, s, t, a, b, c, d;
+				e = function(a) {
+					a = a.replace(/\r\n/g, "\n");
+					for (var b = "", d = 0; d < a.length; d++) {
+						var c = a.charCodeAt(d);
+						128 > c ? b += String.fromCharCode(c) : (127 < c && 2048 > c ? b += String.fromCharCode(c >> 6 | 192) : (b += String.fromCharCode(c >> 12 | 224), b += String.fromCharCode(c >> 6 & 63 | 128)), b += String.fromCharCode(c & 63 | 128))
+					}
+					return b;
+				}(e);
+				f = function(b) {
+					var a, c = b.length;
+					a = c + 8;
+					for (var d = 16 * ((a - a % 64) / 64 + 1), e = Array(d - 1), f = 0, g = 0; g < c;) a = (g - g % 4) / 4, f = g % 4 * 8, e[a] |= b.charCodeAt(g) << f, g++;
+					a = (g - g % 4) / 4;
+					e[a] |= 128 << g % 4 * 8;
+					e[d - 2] = c << 3;
+					e[d - 1] = c >>> 29;
+					return e
+				}(e);
+				a = 1732584193, b = 4023233417, c = 2562383102, d = 271733878;
+				for (e = 0; e < f.length; e += 16) q = a, r = b, s = c, t = d, a = k(a, b, c, d, f[e + 0], 7, 3614090360), d = k(d, a, b, c, f[e + 1], 12, 3905402710), c = k(c, d, a, b, f[e + 2], 17, 606105819), b = k(b, c, d, a, f[e + 3], 22, 3250441966), a = k(a, b, c, d, f[e + 4], 7, 4118548399), d = k(d, a, b, c, f[e + 5], 12, 1200080426), c = k(c, d, a, b, f[e + 6], 17, 2821735955), b = k(b, c, d, a, f[e + 7], 22, 4249261313), a = k(a, b, c, d, f[e + 8], 7, 1770035416), d = k(d, a, b, c, f[e + 9], 12, 2336552879), c = k(c, d, a, b, f[e + 10], 17, 4294925233), b = k(b, c, d, a, f[e + 11], 22, 2304563134), a = k(a, b, c, d, f[e + 12], 7, 1804603682), d = k(d, a, b, c, f[e + 13], 12, 4254626195), c = k(c, d, a, b, f[e + 14], 17, 2792965006), b = k(b, c, d, a, f[e + 15], 22, 1236535329), a = l(a, b, c, d, f[e + 1], 5, 4129170786), d = l(d, a, b, c, f[e + 6], 9, 3225465664), c = l(c, d, a, b, f[e + 11], 14, 643717713), b = l(b, c, d, a, f[e + 0], 20, 3921069994), a = l(a, b, c, d, f[e + 5], 5, 3593408605), d = l(d, a, b, c, f[e + 10], 9, 38016083), c = l(c, d, a, b, f[e + 15], 14, 3634488961), b = l(b, c, d, a, f[e + 4], 20, 3889429448), a = l(a, b, c, d, f[e + 9], 5, 568446438), d = l(d, a, b, c, f[e + 14], 9, 3275163606), c = l(c, d, a, b, f[e + 3], 14, 4107603335), b = l(b, c, d, a, f[e + 8], 20, 1163531501), a = l(a, b, c, d, f[e + 13], 5, 2850285829), d = l(d, a, b, c, f[e + 2], 9, 4243563512), c = l(c, d, a, b, f[e + 7], 14, 1735328473), b = l(b, c, d, a, f[e + 12], 20, 2368359562), a = m(a, b, c, d, f[e + 5], 4, 4294588738), d = m(d, a, b, c, f[e + 8], 11, 2272392833), c = m(c, d, a, b, f[e + 11], 16, 1839030562), b = m(b, c, d, a, f[e + 14], 23, 4259657740), a = m(a, b, c, d, f[e + 1], 4, 2763975236), d = m(d, a, b, c, f[e + 4], 11, 1272893353), c = m(c, d, a, b, f[e + 7], 16, 4139469664), b = m(b, c, d, a, f[e + 10], 23, 3200236656), a = m(a, b, c, d, f[e + 13], 4, 681279174), d = m(d, a, b, c, f[e + 0], 11, 3936430074), c = m(c, d, a, b, f[e + 3], 16, 3572445317), b = m(b, c, d, a, f[e + 6], 23, 76029189), a = m(a, b, c, d, f[e + 9], 4, 3654602809), d = m(d, a, b, c, f[e + 12], 11, 3873151461), c = m(c, d, a, b, f[e + 15], 16, 530742520), b = m(b, c, d, a, f[e + 2], 23, 3299628645), a = n(a, b, c, d, f[e + 0], 6, 4096336452), d = n(d, a, b, c, f[e + 7], 10, 1126891415), c = n(c, d, a, b, f[e + 14], 15, 2878612391), b = n(b, c, d, a, f[e + 5], 21, 4237533241), a = n(a, b, c, d, f[e + 12], 6, 1700485571), d = n(d, a, b, c, f[e + 3], 10, 2399980690), c = n(c, d, a, b, f[e + 10], 15, 4293915773), b = n(b, c, d, a, f[e + 1], 21, 2240044497), a = n(a, b, c, d, f[e + 8], 6, 1873313359), d = n(d, a, b, c, f[e + 15], 10, 4264355552), c = n(c, d, a, b, f[e + 6], 15, 2734768916), b = n(b, c, d, a, f[e + 13], 21, 1309151649), a = n(a, b, c, d, f[e + 4], 6, 4149444226), d = n(d, a, b, c, f[e + 11], 10, 3174756917), c = n(c, d, a, b, f[e + 2], 15, 718787259), b = n(b, c, d, a, f[e + 9], 21, 3951481745), a = h(a, q), b = h(b, r), c = h(c, s), d = h(d, t);
+				return (p(a) + p(b) + p(c) + p(d)).toLowerCase();
 			}
 
 			checkForSpecialCase (text, input) {
@@ -1194,7 +1320,7 @@ module.exports = (_ => {
 				switch (BDFDB.LanguageUtils.getLanguage().id) {
 					case "bg":		// Bulgarian
 						return {
-							context_googletranslateoption:		"Търсене превод",
+							context_translator:					"Търсене превод",
 							context_messagetranslateoption:		"Превод на съобщението",
 							context_messageuntranslateoption:	"Превод на съобщението",
 							popout_translateoption:				"Превод",
@@ -1206,7 +1332,7 @@ module.exports = (_ => {
 						};
 					case "da":		// Danish
 						return {
-							context_googletranslateoption:		"Søg oversættelse",
+							context_translator:					"Søg oversættelse",
 							context_messagetranslateoption:		"Oversæt besked",
 							context_messageuntranslateoption:	"Ikke-oversat besked",
 							popout_translateoption:				"Oversætte",
@@ -1218,7 +1344,7 @@ module.exports = (_ => {
 						};
 					case "de":		// German
 						return {
-							context_googletranslateoption:		"Übersetzung suchen",
+							context_translator:					"Übersetzung suchen",
 							context_messagetranslateoption:		"Nachricht übersetzen",
 							context_messageuntranslateoption:	"Nachricht unübersetzen",
 							popout_translateoption:				"Übersetzen",
@@ -1230,7 +1356,7 @@ module.exports = (_ => {
 						};
 					case "el":		// Greek
 						return {
-							context_googletranslateoption:		"Αναζήτηση μετάφρασης",
+							context_translator:					"Αναζήτηση μετάφρασης",
 							context_messagetranslateoption:		"Μετάφραση μηνύματος",
 							context_messageuntranslateoption:	"Μη μετάφραση μηνύματος",
 							popout_translateoption:				"Μεταφράζω",
@@ -1242,7 +1368,7 @@ module.exports = (_ => {
 						};
 					case "es":		// Spanish
 						return {
-							context_googletranslateoption:		"Buscar traducción",
+							context_translator:					"Buscar traducción",
 							context_messagetranslateoption:		"Traducir mensaje",
 							context_messageuntranslateoption:	"Mensaje sin traducir",
 							popout_translateoption:				"Traducir",
@@ -1254,7 +1380,7 @@ module.exports = (_ => {
 						};
 					case "fi":		// Finnish
 						return {
-							context_googletranslateoption:		"Hae käännöstä",
+							context_translator:					"Hae käännöstä",
 							context_messagetranslateoption:		"Käännä viesti",
 							context_messageuntranslateoption:	"Käännä viesti",
 							popout_translateoption:				"Kääntää",
@@ -1266,7 +1392,7 @@ module.exports = (_ => {
 						};
 					case "fr":		// French
 						return {
-							context_googletranslateoption:		"Recherche de traduction",
+							context_translator:					"Recherche de traduction",
 							context_messagetranslateoption:		"Traduire le message",
 							context_messageuntranslateoption:	"Message non traduit",
 							popout_translateoption:				"Traduire",
@@ -1278,7 +1404,7 @@ module.exports = (_ => {
 						};
 					case "hr":		// Croatian
 						return {
-							context_googletranslateoption:		"Pretraži prijevod",
+							context_translator:					"Pretraži prijevod",
 							context_messagetranslateoption:		"Prevedi poruku",
 							context_messageuntranslateoption:	"Prevedi poruku",
 							popout_translateoption:				"Prevedi",
@@ -1290,7 +1416,7 @@ module.exports = (_ => {
 						};
 					case "hu":		// Hungarian
 						return {
-							context_googletranslateoption:		"Keresés a fordításban",
+							context_translator:					"Keresés a fordításban",
 							context_messagetranslateoption:		"Üzenet lefordítása",
 							context_messageuntranslateoption:	"Az üzenet lefordítása",
 							popout_translateoption:				"fordít",
@@ -1302,7 +1428,7 @@ module.exports = (_ => {
 						};
 					case "it":		// Italian
 						return {
-							context_googletranslateoption:		"Cerca traduzione",
+							context_translator:					"Cerca traduzione",
 							context_messagetranslateoption:		"Traduci messaggio",
 							context_messageuntranslateoption:	"Annulla traduzione messaggio",
 							popout_translateoption:				"Tradurre",
@@ -1314,7 +1440,7 @@ module.exports = (_ => {
 						};
 					case "ja":		// Japanese
 						return {
-							context_googletranslateoption:		"翻訳を検索",
+							context_translator:					"翻訳を検索",
 							context_messagetranslateoption:		"メッセージの翻訳",
 							context_messageuntranslateoption:	"メッセージの翻訳解除",
 							popout_translateoption:				"翻訳する",
@@ -1326,7 +1452,7 @@ module.exports = (_ => {
 						};
 					case "ko":		// Korean
 						return {
-							context_googletranslateoption:		"번역 검색",
+							context_translator:					"번역 검색",
 							context_messagetranslateoption:		"메시지 번역",
 							context_messageuntranslateoption:	"메시지 번역 취소",
 							popout_translateoption:				"옮기다",
@@ -1338,7 +1464,7 @@ module.exports = (_ => {
 						};
 					case "lt":		// Lithuanian
 						return {
-							context_googletranslateoption:		"Paieškos vertimas",
+							context_translator:					"Paieškos vertimas",
 							context_messagetranslateoption:		"Versti pranešimą",
 							context_messageuntranslateoption:	"Išversti pranešimą",
 							popout_translateoption:				"Išversti",
@@ -1350,7 +1476,7 @@ module.exports = (_ => {
 						};
 					case "nl":		// Dutch
 						return {
-							context_googletranslateoption:		"Zoek vertaling",
+							context_translator:					"Zoek vertaling",
 							context_messagetranslateoption:		"Bericht vertalen",
 							context_messageuntranslateoption:	"Bericht onvertalen",
 							popout_translateoption:				"Vertalen",
@@ -1362,7 +1488,7 @@ module.exports = (_ => {
 						};
 					case "no":		// Norwegian
 						return {
-							context_googletranslateoption:		"Søk i oversettelse",
+							context_translator:					"Søk i oversettelse",
 							context_messagetranslateoption:		"Oversett melding",
 							context_messageuntranslateoption:	"Ikke oversett melding",
 							popout_translateoption:				"Oversette",
@@ -1374,7 +1500,7 @@ module.exports = (_ => {
 						};
 					case "pl":		// Polish
 						return {
-							context_googletranslateoption:		"Wyszukaj tłumaczenie",
+							context_translator:					"Wyszukaj tłumaczenie",
 							context_messagetranslateoption:		"Przetłumacz wiadomość",
 							context_messageuntranslateoption:	"Nieprzetłumacz wiadomość",
 							popout_translateoption:				"Tłumaczyć",
@@ -1386,7 +1512,7 @@ module.exports = (_ => {
 						};
 					case "pt-BR":	// Portuguese (Brazil)
 						return {
-							context_googletranslateoption:		"Tradução de pesquisa",
+							context_translator:					"Tradução de pesquisa",
 							context_messagetranslateoption:		"Traduzir mensagem",
 							context_messageuntranslateoption:	"Mensagem não traduzida",
 							popout_translateoption:				"Traduzir",
@@ -1398,7 +1524,7 @@ module.exports = (_ => {
 						};
 					case "ro":		// Romanian
 						return {
-							context_googletranslateoption:		"Căutare traducere",
+							context_translator:					"Căutare traducere",
 							context_messagetranslateoption:		"Traduceți mesajul",
 							context_messageuntranslateoption:	"Untraduceți mesajul",
 							popout_translateoption:				"Traduceți",
@@ -1410,7 +1536,7 @@ module.exports = (_ => {
 						};
 					case "ru":		// Russian
 						return {
-							context_googletranslateoption:		"Искать перевод",
+							context_translator:					"Искать перевод",
 							context_messagetranslateoption:		"Перевести сообщение",
 							context_messageuntranslateoption:	"Непереведенное сообщение",
 							popout_translateoption:				"Переведите",
@@ -1422,7 +1548,7 @@ module.exports = (_ => {
 						};
 					case "sv":		// Swedish
 						return {
-							context_googletranslateoption:		"Sök översättning",
+							context_translator:					"Sök översättning",
 							context_messagetranslateoption:		"Översätt meddelande",
 							context_messageuntranslateoption:	"Untranslate meddelande",
 							popout_translateoption:				"Översätt",
@@ -1434,7 +1560,7 @@ module.exports = (_ => {
 						};
 					case "th":		// Thai
 						return {
-							context_googletranslateoption:		"ค้นหาคำแปล",
+							context_translator:					"ค้นหาคำแปล",
 							context_messagetranslateoption:		"แปลข้อความ",
 							context_messageuntranslateoption:	"ยกเลิกการแปลข้อความ",
 							popout_translateoption:				"แปลภาษา",
@@ -1446,7 +1572,7 @@ module.exports = (_ => {
 						};
 					case "tr":		// Turkish
 						return {
-							context_googletranslateoption:		"Çeviri ara",
+							context_translator:					"Çeviri ara",
 							context_messagetranslateoption:		"Mesajı Çevir",
 							context_messageuntranslateoption:	"Çeviriyi Kaldır Mesajı",
 							popout_translateoption:				"Çevirmek",
@@ -1458,7 +1584,7 @@ module.exports = (_ => {
 						};
 					case "uk":		// Ukrainian
 						return {
-							context_googletranslateoption:		"Пошук перекладу",
+							context_translator:					"Пошук перекладу",
 							context_messagetranslateoption:		"Перекласти повідомлення",
 							context_messageuntranslateoption:	"Неперекладене повідомлення",
 							popout_translateoption:				"Перекласти",
@@ -1470,7 +1596,7 @@ module.exports = (_ => {
 						};
 					case "vi":		// Vietnamese
 						return {
-							context_googletranslateoption:		"Tìm kiếm bản dịch",
+							context_translator:					"Tìm kiếm bản dịch",
 							context_messagetranslateoption:		"Dịch tin nhắn",
 							context_messageuntranslateoption:	"Thư chưa dịch",
 							popout_translateoption:				"Phiên dịch",
@@ -1482,31 +1608,31 @@ module.exports = (_ => {
 						};
 					case "zh-CN":	// Chinese (China)
 						return {
-							context_googletranslateoption:		"搜索翻译",
+							context_translator:					"搜索翻译",
 							context_messagetranslateoption:		"翻译消息",
 							context_messageuntranslateoption:	"取消翻译消息",
 							popout_translateoption:				"翻译",
 							popout_untranslateoption:			"取消翻译",
 							toast_translating:					"正在翻译",
 							toast_translating_failed:			"翻译失败",
-							toast_translating_tryanother:		"尝试其他翻译器",
+							toast_translating_tryanother:		"尝试其它翻译器",
 							translated_watermark:				"已翻译"
 						};
 					case "zh-TW":	// Chinese (Taiwan)
 						return {
-							context_googletranslateoption:		"搜索翻譯",
+							context_translator:					"搜尋翻譯",
 							context_messagetranslateoption:		"翻譯訊息",
 							context_messageuntranslateoption:	"取消翻譯訊息",
 							popout_translateoption:				"翻譯",
 							popout_untranslateoption:			"取消翻譯",
 							toast_translating:					"正在翻譯",
-							toast_translating_failed:			"翻譯失敗",
-							toast_translating_tryanother:		"嘗試其他翻譯器",
+							toast_translating_failed:			"無法翻譯",
+							toast_translating_tryanother:		"嘗試其它翻譯器",
 							translated_watermark:				"已翻譯"
 						};
 					default:		// English
 						return {
-							context_googletranslateoption:		"Search Translation",
+							context_translator:					"Search Translation",
 							context_messagetranslateoption:		"Translate Message",
 							context_messageuntranslateoption:	"Untranslate Message",
 							popout_translateoption:				"Translate",

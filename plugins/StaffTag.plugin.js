@@ -2,7 +2,7 @@
  * @name StaffTag
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.4.5
+ * @version 1.5.0
  * @description Adds a Crown/Tag to Server Owners (or Admins/Management)
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,12 +17,12 @@ module.exports = (_ => {
 		"info": {
 			"name": "StaffTag",
 			"author": "DevilBro",
-			"version": "1.4.5",
+			"version": "1.5.0",
 			"description": "Adds a Crown/Tag to Server Owners (or Admins/Management)"
 		},
 		"changeLog": {
-			"fixed": {
-				"Commands": "No longer use the crown of the bot instead of the user"
+			"added": {
+				"More Management Permission Sub Types": "Added new Sub Types (Threads, Event, Voice Channels [kick, mute, move])"
 			}
 		}
 	};
@@ -69,7 +69,9 @@ module.exports = (_ => {
 			NONE: 0,
 			MANAGEMENT: 1,
 			ADMIN: 2,
-			OWNER: 3
+			THREAD_CREATOR: 3,
+			GROUP_OWNER: 4,
+			OWNER: 5
 		};
 		
 		return class StaffTag extends Plugin {
@@ -80,37 +82,45 @@ module.exports = (_ => {
 						MessageUsername: "default",
 						VoiceUser: "render",
 						NameTag: "default",
-						UserPopoutInfo: "default"
+						UserPopoutInfo: "UserPopoutInfo"
 					}
 				};
 				
 				this.defaults = {
 					general: {
-						useCrown:				{value: true,	description: "Use the Crown Icon instead of the Bot Tag Style"},
-						useRoleColor:			{value: true, 	description: "Use the Role Color instead of the default Blurple"},
-						useBlackFont:			{value: false,	description: "Use black Font instead of darkening the Role Color on bright Colors"},
-						ignoreBots:				{value: false,	description: "Don't add the Owner/Admin/Management Tag for Bots"}
+						useCrown:					{value: true,	description: "Use the Crown Icon instead of the Bot Tag Style"},
+						useRoleColor:				{value: true, 	description: "Use the Role Color instead of the default Blurple"},
+						useBlackFont:				{value: false,	description: "Use black Font instead of darkening the Role Color on bright Colors"},
+						ignoreBots:					{value: false,	description: "Don't add the Owner/Admin/Management Tag for Bots"},
+						ignoreMyself:				{value: false,	description: "Don't add the Owner/Admin/Management Tag for yourself"}
 					},
 					tagTypes: {
-						owners:					{value: true, 	description: "Owner Tag (Server/Group Owner)"},
-						admins:					{value: true, 	description: "Admin Tag (Admin Permissions)"},
-						managementG:			{value: true, 	description: "Management Tag (Server Management)"},
-						managementC:			{value: true, 	description: "Management Tag (Channel Management)"},
-						managementR:			{value: true, 	description: "Management Tag (Role Management)"},
-						managementU:			{value: true, 	description: "Management Tag (User Management 'Kick/Ban')"},
-						managementM:			{value: true, 	description: "Management Tag (Message Management)"}
+						owners:						{value: true, 	description: "Server Owner Tag"},
+						groupOwners:				{value: true, 	description: "Group Owner Tag"},
+						threadCreators:				{value: true, 	description: "Thread Creator Tag"},
+						admins:						{value: true, 	description: "Admin Tag (Admin Permissions)"},
+						managementG:				{value: true, 	description: "Management Tag (Server Management)"},
+						managementC:				{value: true, 	description: "Management Tag (Channel Management)"},
+						managementT:				{value: true, 	description: "Management Tag (Threads Management)"},
+						managementE:				{value: true, 	description: "Management Tag (Events Management)"},
+						managementR:				{value: true, 	description: "Management Tag (Role Management)"},
+						managementU:				{value: true, 	description: "Management Tag (User Management 'Kick/Ban')"},
+						managementV:				{value: true, 	description: "Management Tag (Voice Management 'Mute/Deafen/Move')"},
+						managementM:				{value: true, 	description: "Management Tag (Message Management)"}
 					},
 					tagPlaces: {
-						chat:					{value: true, 	description: "Messages"},
-						memberList:				{value: true, 	description: "Member List"},
-						voiceList:				{value: true, 	description: "Voice User List"},
-						userPopout:				{value: true, 	description: "User Popouts"},
-						userProfile:			{value: true, 	description: "User Profile Modal"},
+						chat:						{value: true, 	description: "Messages"},
+						memberList:					{value: true, 	description: "Member List"},
+						voiceList:					{value: true, 	description: "Voice User List"},
+						userPopout:					{value: true, 	description: "User Popouts"},
+						userProfile:				{value: true, 	description: "User Profile Modal"},
 					},
 					inputs: {
-						ownOwnerTagName:		{value: "Owner", 		description: "Owner Tags"},
-						ownAdminTagName:		{value: "Admin", 		description: "Admin Tags"},
-						ownManagementTagName:	{value: "Management", 	description: "Management Tags"}
+						ownOwnerTagName:			{value: "Owner", 		description: "Server Owner Tags"},
+						ownGroupOwnerTagName:		{value: "Group Owner", 	description: "Group Owner Tags"},
+						ownThreadCreatorTagName:	{value: "Creator", 		description: "Thread Creator Tags"},
+						ownAdminTagName:			{value: "Admin", 		description: "Admin Tags"},
+						ownManagementTagName:		{value: "Management", 	description: "Management Tags"}
 					}
 				};
 			
@@ -121,22 +131,23 @@ module.exports = (_ => {
 					${BDFDB.dotCN.memberownericon + BDFDB.dotCN._stafftagmanagementicon} {
 						color: #88540b;
 					}
+					${BDFDB.dotCN.memberownericon + BDFDB.dotCN._stafftagthreadcreatoricon} {
+						color: var(--text-muted);
+					}
+					${BDFDB.dotCN.memberownericon} {
+						top: 0px;
+					}
 					${BDFDB.dotCNS.message + BDFDB.dotCN.memberownericon} {
 						top: 2px;
 					}
-					${BDFDB.dotCNS.voicecontent + BDFDB.dotCN.memberownericon} {
-						top: 0px;
-					}
-					${BDFDB.dotCNS.userprofile + BDFDB.dotCN.memberownericon} {
-						top: 0px;
-					}
-					${BDFDB.dotCNS.messagerepliedmessage + BDFDB.dotCN.memberownericon} {
-						top: 0px;
+					${BDFDB.dotCNS.messagecompact + BDFDB.dotCN.memberownericon} {
+						top: 1px;
 						margin-left: 0;
 						margin-right: 4px;
 					}
-					${BDFDB.dotCNS.messagecompact + BDFDB.dotCN.memberownericon} {
-						top: 1px;
+					${BDFDB.dotCNS.messagerepliedmessage + BDFDB.dotCN.memberownericon},
+					${BDFDB.dotCNS.messagethreadaccessory + BDFDB.dotCN.memberownericon} {
+						top: 0px;
 						margin-left: 0;
 						margin-right: 4px;
 					}
@@ -311,8 +322,16 @@ module.exports = (_ => {
 					let label, className;
 					switch (userType) {
 						case userTypes.OWNER:
-							label = channel && channel.isGroupDM() ? BDFDB.LanguageUtils.LanguageStrings.GROUP_OWNER : BDFDB.LanguageUtils.LanguageStrings.GUILD_OWNER;
+							label = BDFDB.LanguageUtils.LanguageStrings.GUILD_OWNER;
 							className = BDFDB.disCN._stafftagownericon;
+							break;
+						case userTypes.GROUP_OWNER:
+							label = BDFDB.LanguageUtils.LanguageStrings.GROUP_OWNER;
+							className = BDFDB.disCN._stafftaggroupownericon;
+							break;
+						case userTypes.THREAD_CREATOR:
+							label = this.labels.creator.replace("{{var0}}", BDFDB.LanguageUtils.LanguageStrings.THREAD);
+							className = BDFDB.disCN._stafftagthreadcreatoricon;
 							break;
 						case userTypes.ADMIN:
 							label = BDFDB.LanguageUtils.LanguageStrings.ADMINISTRATOR;
@@ -337,6 +356,12 @@ module.exports = (_ => {
 					switch (userType) {
 						case userTypes.OWNER:
 							input = "ownOwnerTagName";
+							break;
+						case userTypes.GROUP_OWNER:
+							input = "ownGroupOwnerTagName";
+							break;
+						case userTypes.THREAD_CREATOR:
+							input = "ownThreadCreatorTagName";
 							break;
 						case userTypes.ADMIN:
 							input = "ownAdminTagName";
@@ -371,19 +396,25 @@ module.exports = (_ => {
 				return [
 					this.settings.tagTypes.managementG && BDFDB.UserUtils.can("MANAGE_GUILD", user.id) && BDFDB.LanguageUtils.LibraryStrings.server,
 					this.settings.tagTypes.managementC && BDFDB.UserUtils.can("MANAGE_CHANNELS", user.id) && BDFDB.LanguageUtils.LanguageStrings.CHANNELS,
+					this.settings.tagTypes.managementT && BDFDB.UserUtils.can("MANAGE_THREADS", user.id) && BDFDB.LanguageUtils.LanguageStrings.THREADS,
+					this.settings.tagTypes.managementE && BDFDB.UserUtils.can("MANAGE_EVENTS", user.id) && BDFDB.LanguageUtils.LanguageStrings.GUILD_EVENTS,
+					this.settings.tagTypes.managementC && BDFDB.UserUtils.can("MANAGE_CHANNELS", user.id) && BDFDB.LanguageUtils.LanguageStrings.CHANNELS,
 					this.settings.tagTypes.managementR && BDFDB.UserUtils.can("MANAGE_ROLES", user.id) && BDFDB.LanguageUtils.LanguageStrings.ROLES,
 					this.settings.tagTypes.managementU && (BDFDB.UserUtils.can("BAN_MEMBERS", user.id) || BDFDB.UserUtils.can("KICK_MEMBERS", user.id)) && BDFDB.LanguageUtils.LanguageStrings.MEMBERS,
+					this.settings.tagTypes.managementV && (BDFDB.UserUtils.can("MUTE_MEMBERS", user.id) || BDFDB.UserUtils.can("DEAFEN_MEMBERS", user.id) || BDFDB.UserUtils.can("MOVE_MEMBERS", user.id)) && BDFDB.LanguageUtils.LanguageStrings.VOICE_AND_VIDEO,
 					this.settings.tagTypes.managementM && BDFDB.UserUtils.can("MANAGE_MESSAGES", user.id) && BDFDB.LanguageUtils.LanguageStrings.MESSAGES
 				].filter(n => n).join(", ");
 			}
 			
 			getUserType (user, channelId) {
-				if (!user || this.settings.general.ignoreBots && user.bot) return userTypes.NONE;
-				let channel = BDFDB.LibraryModules.ChannelStore.getChannel(channelId || BDFDB.LibraryModules.LastChannelStore.getChannelId());
+				if (!user || this.settings.general.ignoreBots && user.bot || this.settings.general.ignoreMyself && user.id == BDFDB.UserUtils.me.id) return userTypes.NONE;
+				const channel = BDFDB.LibraryModules.ChannelStore.getChannel(channelId || BDFDB.LibraryModules.LastChannelStore.getChannelId());
 				if (!channel) return userTypes.NONE;
-				let guild = BDFDB.LibraryModules.GuildStore.getGuild(channel.guild_id);
-				let isOwner = channel.ownerId == user.id || guild && guild.ownerId == user.id;
-				if (this.settings.tagTypes.owners && isOwner) return userTypes.OWNER;
+				const guild = BDFDB.LibraryModules.GuildStore.getGuild(channel.guild_id);
+				
+				if (this.settings.tagTypes.owners && guild && guild.ownerId == user.id) return userTypes.OWNER;
+				else if (this.settings.tagTypes.groupOwners && channel.ownerId == user.id && channel.isGroupDM()) return userTypes.GROUP_OWNER;
+				else if (this.settings.tagTypes.threadCreators && channel.ownerId == user.id && BDFDB.ChannelUtils.isThread(channel)) return userTypes.THREAD_CREATOR;
 				else if (this.settings.tagTypes.admins && BDFDB.UserUtils.can("ADMINISTRATOR", user.id)) return userTypes.ADMIN;
 				else if (this.settings.tagTypes.managementG && BDFDB.UserUtils.can("MANAGE_GUILD", user.id) || this.settings.tagTypes.managementC && BDFDB.UserUtils.can("MANAGE_CHANNELS", user.id) || this.settings.tagTypes.managementR && BDFDB.UserUtils.can("MANAGE_ROLES", user.id) || this.settings.tagTypes.managementU && (BDFDB.UserUtils.can("BAN_MEMBERS", user.id) || BDFDB.UserUtils.can("KICK_MEMBERS", user.id)) || this.settings.tagTypes.managementM && BDFDB.UserUtils.can("MANAGE_MESSAGES", user.id)) return userTypes.MANAGEMENT;
 				return userTypes.NONE;
@@ -393,111 +424,148 @@ module.exports = (_ => {
 				switch (BDFDB.LanguageUtils.getLanguage().id) {
 					case "bg":		// Bulgarian
 						return {
-							management:							"Управление"
+							management:							"Управление",
+							creator:							"Cъздател {{var0}}"
+						};
+					case "cs":		// Czech
+						return {
+							management:							"Řízení",
+							creator:							"{{var0}} autor"
 						};
 					case "da":		// Danish
 						return {
-							management:							"Ledelse"
+							management:							"Ledelse",
+							creator:							"{{var0}} skaber"
 						};
 					case "de":		// German
 						return {
-							management:							"Verwaltung"
+							management:							"Verwaltung",
+							creator:							"{{var0}}ersteller"
 						};
 					case "el":		// Greek
 						return {
-							management:							"Διαχείριση"
+							management:							"Διαχείριση",
+							creator:							"{{var0}} δημιουργός"
 						};
 					case "es":		// Spanish
 						return {
-							management:							"Administración"
+							management:							"Administración",
+							creator:							"{{var0}} creador"
 						};
 					case "fi":		// Finnish
 						return {
-							management:							"Johto"
+							management:							"Johto",
+							creator:							"{{var0}} luoja"
 						};
 					case "fr":		// French
 						return {
-							management:							"La gestion"
+							management:							"La gestion",
+							creator:							"{{var0}}créateur"
+						};
+					case "hi":		// Hindi
+						return {
+							management:							"प्रबंध",
+							creator:							"{{var0}}निर्माता"
 						};
 					case "hr":		// Croatian
 						return {
-							management:							"Upravljanje"
+							management:							"Upravljanje",
+							creator:							"{{var0}} kreator"
 						};
 					case "hu":		// Hungarian
 						return {
-							management:							"Menedzsment"
+							management:							"Menedzsment",
+							creator:							"{{var0}} alkotója"
 						};
 					case "it":		// Italian
 						return {
-							management:							"Gestione"
+							management:							"Gestione",
+							creator:							"{{var0}}creatore"
 						};
 					case "ja":		// Japanese
 						return {
-							management:							"管理"
+							management:							"管理",
+							creator:							"{{var0}}作成者"
 						};
 					case "ko":		// Korean
 						return {
-							management:							"조치"
+							management:							"조치",
+							creator:							"{{var0}}창조자"
 						};
 					case "lt":		// Lithuanian
 						return {
-							management:							"Valdymas"
+							management:							"Valdymas",
+							creator:							"{{var0}} kūrėjas"
 						};
 					case "nl":		// Dutch
 						return {
-							management:							"Beheer"
+							management:							"Beheer",
+							creator:							"{{var0}}maker"
 						};
 					case "no":		// Norwegian
 						return {
-							management:							"Ledelse"
+							management:							"Ledelse",
+							creator:							"{{var0}} skaperen"
 						};
 					case "pl":		// Polish
 						return {
-							management:							"Zarządzanie"
+							management:							"Zarządzanie",
+							creator:							"{{var0}}twórca"
 						};
 					case "pt-BR":	// Portuguese (Brazil)
 						return {
-							management:							"Gestão"
+							management:							"Gestão",
+							creator:							"{{var0}} criador"
 						};
 					case "ro":		// Romanian
 						return {
-							management:							"Administrare"
+							management:							"Administrare",
+							creator:							"{{var0}} creator"
 						};
 					case "ru":		// Russian
 						return {
-							management:							"Управление"
+							management:							"Управление",
+							creator:							"Cоздатель {{var0}}"
 						};
 					case "sv":		// Swedish
 						return {
-							management:							"Förvaltning"
+							management:							"Förvaltning",
+							creator:							"{{var0}} skapare"
 						};
 					case "th":		// Thai
 						return {
-							management:							"การจัดการ"
+							management:							"การจัดการ",
+							creator:							"{{var0}}ผู้สร้าง"
 						};
 					case "tr":		// Turkish
 						return {
-							management:							"Yönetim"
+							management:							"Yönetim",
+							creator:							"{{var0}}yaratıcı"
 						};
 					case "uk":		// Ukrainian
 						return {
-							management:							"Управління"
+							management:							"Управління",
+							creator:							"{{var0}} творець"
 						};
 					case "vi":		// Vietnamese
 						return {
-							management:							"Sự quản lý"
+							management:							"Sự quản lý",
+							creator:							"Người tạo {{var0}}"
 						};
 					case "zh-CN":	// Chinese (China)
 						return {
-							management:							"管理"
+							management:							"管理",
+							creator:							"{{var0}} 创建者"
 						};
 					case "zh-TW":	// Chinese (Taiwan)
 						return {
-							management:							"管理"
+							management:							"管理",
+							creator:							"{{var0}} 建立者"
 						};
 					default:		// English
 						return {
-							management:							"Management"
+							management:							"Management",
+							creator:							"{{var0}} Creator"
 						};
 				}
 			}

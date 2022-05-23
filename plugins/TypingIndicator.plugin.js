@@ -8,13 +8,13 @@
  * @authorId 226677096091484160
  */
 
-var TypingIndicator = (() => {
+module.exports = (() => {
 	const config = {
 		info:{
 			name: "TypingIndicator",
 			authors: [{name: "l0c4lh057", github_username: "l0c4lh057", twitter_username: "l0c4lh057", discord_id: "226677096091484160"}],
 			description: "Shows an indicator in the guild/channel list when someone is typing there",
-			version: "0.5.1",
+			version: "0.5.4",
 			github: "https://github.com/l0c4lh057/BetterDiscordStuff/blob/master/Plugins/TypingIndicator/",
 			github_raw: "https://raw.githubusercontent.com/l0c4lh057/BetterDiscordStuff/master/Plugins/TypingIndicator/TypingIndicator.plugin.js"
 		},
@@ -37,7 +37,7 @@ var TypingIndicator = (() => {
 				type: "switch",
 				id: "includeBlocked",
 				name: "Include blocked users",
-				note: "With this option enabled the indicator will also show for users you have blocked",
+				note: "With this option enabled the indicator will also show for users you have blocked (default: false)",
 				value: false
 			},
 			{
@@ -66,7 +66,7 @@ var TypingIndicator = (() => {
 			{
 				"title": "Fixed",
 				"type": "fixed",
-				"items": ["Should not cause crashes on PTB and Canary anymore", "Should work again on folders"]
+				"items": ["Indicator visible again when using light theme (those were the worst two minutes of this year, even with my health issues rn)"]
 			}
 		]
 	};
@@ -75,7 +75,7 @@ var TypingIndicator = (() => {
 		constructor(){this._config = config;}
 		getName(){return config.info.name;}
 		getAuthor(){return config.info.authors.map(a => a.name).join(", ");}
-		getDescription(){return config.info.description;}
+		getDescription(){return config.info.description + " **Install [ZeresPluginLibrary](https://betterdiscord.app/Download?id=9) and restart discord to use this plugin!**";}
 		getVersion(){return config.info.version;}
 		load(){
 			BdApi.showConfirmationModal("Library Missing", `The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`, {
@@ -83,7 +83,7 @@ var TypingIndicator = (() => {
 				cancelText: "Cancel",
 				onConfirm: () => {
 					require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-						if (error) return require("electron").shell.openExternal("https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js");
+						if (error) return require("electron").shell.openExternal("https://betterdiscord.app/Download?id=9");
 						await new Promise(r => require("fs").writeFile(require("path").join(BdApi.Plugins.folder, "0PluginLibrary.plugin.js"), body, r));
 					});
 				}
@@ -93,9 +93,10 @@ var TypingIndicator = (() => {
 		stop(){}
 	} : (([Plugin, Api]) => {
 		const plugin = (Plugin, Api) => {
-			const { WebpackModules, DiscordModules, Patcher, ReactComponents, PluginUtilities, Utilities } = Api;
+			const { WebpackModules, DiscordModules, Patcher, ReactComponents, PluginUtilities, Utilities, ReactTools, Logger } = Api;
 			const { React, ChannelStore, UserStore, UserTypingStore, RelationshipStore, SelectedGuildStore, DiscordConstants, WindowInfo } = DiscordModules;
 			const Flux = WebpackModules.getByProps("connectStores");
+			const FluxUtils = WebpackModules.getByProps("useStateFromStores");
 			const MutedStore = WebpackModules.getByProps("isMuted", "isChannelMuted");
 			const Spinner = WebpackModules.getByDisplayName("Spinner");
 			const Tooltip = WebpackModules.getByDisplayName("Tooltip");
@@ -116,7 +117,7 @@ var TypingIndicator = (() => {
 				});
 			}
 			
-			const renderElement = ({userIds, opacity, type, isFocused})=>{
+			const renderElement = ({userIds, opacity, type, isFocused, id})=>{
 				userIds = [...new Set(userIds)];
 				if(userIds.length === 0) return null;
 				const usernames = userIds.map(userId => UserStore.getUser(userId)).filter(user => user).map(user => user.tag);
@@ -143,6 +144,7 @@ var TypingIndicator = (() => {
 						...tooltipProps,
 						type: "pulsingEllipsis",
 						className: `ti-indicator typingindicator-${type}`,
+						[`data-${type}-id`]: id,
 						animated: isFocused,
 						style: {
 							marginLeft: 5,
@@ -158,16 +160,19 @@ var TypingIndicator = (() => {
 						.typingindicator-guild, .typingindicator-dms, .typingindicator-folder {
 							position: absolute;
 							bottom: 0;
-							border-radius: 1vh;
-							background-color: #888;
-							box-shadow: 0px 0px 8px 4px #888;
+							padding: 3px;
+							border-radius: 6px;
+							background-color: var(--background-tertiary);
 							right: 14px;
 						}
-						.typingindicator-guild [class*=pulsingEllipsisItem], .typingindicator-dms [class*=pulsingEllipsisItem], .typingindicator-folder [class*=pulsingEllipsisItem] {
-							background-color: white;
-						}
-						.typingindicator-channel span[class*="pulsingEllipsisItem"] {
+						.ti-indicator span.pulsingEllipsisItem-3pNmEc {
 							background-color: var(--channels-default);
+						}
+						.ti-indicator .pulsingEllipsis-3YiXRF {
+							width: 22px;
+						}
+						.ti-indicator .pulsingEllipsisItem-3pNmEc:nth-of-type(3) {
+							margin-right: 0;
 						}
 					`);
 					this.promises = {state:{cancelled: false}, cancel(){this.state.cancelled = true;}};
@@ -188,7 +193,7 @@ var TypingIndicator = (() => {
 				}
 				
 				getPrivateChannels(){
-					return ChannelStore.getPrivateChannels ? Object.values(ChannelStore.getPrivateChannels()) : ChannelStore.getMutablePrivateChannels ? Object.values(ChannelStore.getMutablePrivateChannels) : [];
+					return ChannelStore.getPrivateChannels ? Object.values(ChannelStore.getPrivateChannels()) : ChannelStore.getMutablePrivateChannels ? Object.values(ChannelStore.getMutablePrivateChannels()) : [];
 				}
 				
 				patchChannelList(){
@@ -197,46 +202,88 @@ var TypingIndicator = (() => {
 						if(props.channel.type!==DiscordConstants.ChannelTypes.GUILD_TEXT) return;
 						if(props.selected) return;
 						if(props.muted && !this.settings.includeMuted) return;
-						const selfId = UserStore.getCurrentUser().id;
+						const selfId = UserStore.getCurrentUser()?.id;
+						if(!selfId) return setTimeout(()=>this.patchChannelList(), 100);
 						const fluxWrapper = Flux.connectStores([UserTypingStore, WindowInfo], ()=>({userIds: Object.keys(UserTypingStore.getTypingUsers(props.channel.id))
 							.filter(uId => (uId !== selfId) && (this.settings.includeBlocked || !RelationshipStore.isBlocked(uId)))
 						}));
 						const wrappedCount = fluxWrapper(({userIds}) => {
-							return React.createElement(renderElement, {userIds, opacity: 0.7, type: "channel", isFocused: WindowInfo.isFocused()});
+							return React.createElement(renderElement, {userIds, opacity: 0.7, type: "channel", isFocused: WindowInfo.isFocused(), id: props.channel.id});
 						});
 						const itemList = Utilities.getNestedProp(returnValue, "props.children.props.children.1.props");
 						if(itemList) itemList.children = [...(Array.isArray(itemList.children) ? itemList.children : [itemList.children]), React.createElement(wrappedCount)];
 					});
 				}
 				
-				async patchGuildList(promiseState){
-					const Guild = await ReactComponents.getComponentByName("Guild", "." + WebpackModules.getByProps("badgeIcon", "circleIcon", "listItem", "pill").listItem.replace(" ", "."));
-					if(promiseState.cancelled) return;
-					const selfId = UserStore.getCurrentUser().id;
-					Patcher.after(Guild.component.prototype, "render", (thisObject, _, returnValue) => {
-						let guildData = thisObject.props;
-						if(guildData.selected) return;
-						if(!this.settings.guilds) return;
-						if(!guildData.guild) return;
-						if(MutedStore.isMuted(guildData.guildId) && !this.settings.includeMuted) return;
-						const fluxWrapper = Flux.connectStores([UserTypingStore, WindowInfo], ()=>({userIds: this.getGuildChannels(guildData.guildId)
-								.filter(c => this.settings.includeMuted || !MutedStore.isChannelMuted(c.guild_id, c.id))
-								.flatMap(c => Object.keys(UserTypingStore.getTypingUsers(c.id))
-										.filter(uId => (uId !== selfId) && (this.settings.includeBlocked || !RelationshipStore.isBlocked(uId)))
-								)
-						}));
-						const wrappedCount = fluxWrapper(({userIds}) => {
-							return React.createElement(renderElement, {userIds, opacity: 1, type: "guild", isFocused: WindowInfo.isFocused()});
-						});
-						returnValue.props.children.props.children.push(React.createElement(wrappedCount));
+				onAdded(selector, callback) {
+					if (document.body.querySelector(selector)) return callback(document.body.querySelector(selector));
+					const observer = new MutationObserver((mutations) => {
+					for (let m = 0; m < mutations.length; m++) {
+						for (let i = 0; i < mutations[m].addedNodes.length; i++) {
+							const mutation = mutations[m].addedNodes[i];
+							if (mutation.nodeType === 3) continue; // ignore text
+							const directMatch = mutation.matches(selector) && mutation;
+							const childrenMatch = mutation.querySelector(selector);
+							if (directMatch || childrenMatch) {
+								observer.disconnect();
+								return callback(directMatch ?? childrenMatch);
+								}
+							}
+						}
 					});
-					Guild.forceUpdateAll();
+					observer.observe(document.body, {subtree: true, childList: true});
+					return () => {observer.disconnect();};
+				}
+				
+				async forceUpdateGuilds(promiseState) {
+					document.getElementsByClassName("scroller-1Bvpku none-2Eo-qx scrollerBase-289Jih")[0]?.dispatchEvent(new CustomEvent("scroll"));
+				}
+				
+				// this still doesnt work but it was an attempt to fix it and im too lazy to undo it for release
+				patchGuildList(promiseState){
+					const GuildComponents = WebpackModules.getModule(m => m?.default?.displayName === "GuildNode");
+					if (!GuildComponents || typeof GuildComponents.default !== "function") return console.error("[TypingIndicator] Could not find Guild components");
+					const selfId = UserStore.getCurrentUser()?.id;
+					if(!selfId) return setTimeout(()=>this.patchGuildList(promiseState), 100);
+					const Indicator = guildId => {
+						const props = FluxUtils.useStateFromStoresObject([UserStore, RelationshipStore, WindowInfo, UserTypingStore, MutedStore, UserStore], () => {
+							const selfId = UserStore.getCurrentUser().id;
+							return {
+								userIds: this.getGuildChannels(guildId)
+										.filter(channel => this.settings.includeMuted || !MutedStore.isChannelMuted(channel.guild_id, channel.id))
+										.flatMap(channel => Object.keys(UserTypingStore.getTypingUsers(channel.id)))
+										.filter(userId => (userId !== selfId) && (this.settings.includeBlocked || !RelationshipStore.isBlocked(userId))),
+								isFocused: WindowInfo.isFocused()
+							};
+						});
+						return React.createElement(renderElement, {...props, opacity: 1, id: guildId, type: "guild"});
+					};
+					const PatchedGuild = ({__TI_original, ...props}) => {
+						const returnValue = __TI_original(props);
+						try{
+							if(props.selected) return returnValue;
+							if(!this.settings.guilds) return returnValue;
+							if(!props.guild) return returnValue;
+							if(MutedStore.isMuted(props.guild.id) && !this.settings.includeMuted) return returnValue;
+							returnValue.props.children.props.children.push(Indicator({guildId: props.guild.id}));
+						}catch(err){
+							Logger.error("Error in Guild patch", err);
+						}
+						return returnValue;
+					}
+					Patcher.after(GuildComponents, "default", (_, [args], returnValue)=>{
+						const original = returnValue.type;
+						returnValue.type = PatchedGuild;
+						returnValue.props.__TI_original = original;
+					});
+					this.forceUpdateGuilds(promiseState);
 				}
 				
 				async patchHomeIcon(promiseState){
 					const Home = await ReactComponents.getComponentByName("TutorialIndicator", "." + WebpackModules.getByProps("badgeIcon", "circleIcon", "listItem", "pill").listItem.replace(/ /g, "."));
 					if(promiseState.cancelled) return;
-					const selfId = UserStore.getCurrentUser().id;
+					const selfId = UserStore.getCurrentUser()?.id;
+					if(!selfId) return setTimeout(()=>this.patchHomeIcon(promiseState), 100);
 					Patcher.after(Home.component.prototype, "render", (thisObject, _, returnValue) => {
 						if(!returnValue.props.children) return;
 						let children = returnValue.props.children[0] || returnValue.props.children;
@@ -265,9 +312,9 @@ var TypingIndicator = (() => {
 				async patchFolders(promiseState){
 					const Folder = WebpackModules.find(m=>m?.type?.render && (m?.type?.render||m?.type?.__powercordOriginal_render)?.toString()?.indexOf("SERVER_FOLDER")!==-1);
 					if(promiseState.cancelled || !Folder) return;
-					const selfId = UserStore.getCurrentUser().id;
+					const selfId = UserStore.getCurrentUser()?.id;
+					if(!selfId) return setTimeout(()=>this.patchFolders(promiseState), 100);
 					Patcher.after(Folder.type, "render", (_, [props], returnValue) => {
-						console.log({props, returnValue});
 						if(props.expanded) return;
 						if(!this.settings.folders) return;
 						const fluxWrapper = Flux.connectStores([UserTypingStore, WindowInfo], ()=>({userIds: this.getGuildChannels(...props.guildIds)
@@ -279,7 +326,7 @@ var TypingIndicator = (() => {
 								)
 						}));
 						const wrappedCount = fluxWrapper(({userIds}) => {
-							return React.createElement(renderElement, {userIds, opacity: 1, type: "folder", isFocused: WindowInfo.isFocused()});
+							return React.createElement(renderElement, {userIds, opacity: 1, type: "folder", isFocused: WindowInfo.isFocused(), id: props.folderId});
 						});
 						returnValue.props.children.push(React.createElement(wrappedCount));
 					});
